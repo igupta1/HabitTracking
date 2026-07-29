@@ -92,6 +92,8 @@ Cut to keep this small; add only if actually missed:
   UI for them — duplicating it was a third of the codebase and added nothing to
   the accountability loop, which only needs "he trained, and it was Push day".
 - Streaks and weekly scores.
+- Any judgement about *when* you added a task. A task added at 4pm that you
+  finish by midnight is just a task.
 - An activity feed / history page. The data is all there per-day; nothing reads
   it beyond today.
 - Offline support. Logging with no signal fails rather than queuing.

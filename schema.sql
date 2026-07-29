@@ -22,8 +22,6 @@ create table if not exists tasks (
   day        date not null,
   title      text not null,
   done       boolean not null default false,
-  -- Added after noon, so the morning commitment still means something.
-  added_late boolean not null default false,
   created_at timestamptz not null default now()
 );
 create index if not exists tasks_user_day on tasks (user_id, day);

@@ -16,23 +16,6 @@ export function toDay(instant: Date = new Date()): string {
   }).format(instant)
 }
 
-/** Wall-clock hour (0-23) in app time — used for quiet hours and the late-task cutoff. */
-export function appHour(instant: Date = new Date()): number {
-  return Number(
-    new Intl.DateTimeFormat('en-US', {
-      timeZone: APP_TZ,
-      hour: '2-digit',
-      hour12: false,
-    }).format(instant)
-  )
-}
-
-/** Tasks added after this hour are flagged `addedLate`. */
-export const LATE_TASK_HOUR = 12
-
-export function isLate(instant: Date = new Date()): boolean {
-  return appHour(instant) >= LATE_TASK_HOUR
-}
 
 /** "Tue, Jul 29" for the day header. */
 export function formatDay(day: string): string {

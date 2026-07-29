@@ -119,14 +119,7 @@ function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
               className="tap flex flex-1 items-center gap-3 text-left"
             >
               <Check on={t.done} />
-              <span className={t.done ? 'text-neutral-500 line-through' : ''}>
-                {t.title}
-                {t.added_late && (
-                  <span className="ml-2 rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-400">
-                    late
-                  </span>
-                )}
-              </span>
+              <span className={t.done ? 'text-neutral-500 line-through' : ''}>{t.title}</span>
             </div>
             {!readOnly && <X onClick={() => start(() => deleteRow(user, 'tasks', t.id))} />}
           </div>

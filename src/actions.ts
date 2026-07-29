@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { sql } from '@/db'
-import { toDay, isLate } from '@/lib/day'
+import { toDay } from '@/lib/day'
 import { habit, isUserId, type UserId } from '@/lib/habits'
 
 /**
@@ -77,9 +77,7 @@ export async function addTask(u: string, title: string) {
   const t = title.trim()
   if (!t) return
 
-  await sql`
-    insert into tasks (user_id, day, title, added_late)
-    values (${user}, ${toDay()}, ${t}, ${isLate()})`
+  await sql`insert into tasks (user_id, day, title) values (${user}, ${toDay()}, ${t})`
   refresh()
 }
 
