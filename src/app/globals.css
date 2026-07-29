@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #000;
+  color: #fff;
+  overscroll-behavior-y: none;
+}
+
+body {
+  /* Home-screen web apps run under the status bar; keep content clear of it. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-neutral-900 border border-neutral-800;
+  }
+
+  .tap {
+    @apply active:scale-[0.98] transition-transform duration-75;
+  }
+
+  .input {
+    @apply rounded-lg bg-neutral-800 px-3 py-2 outline-none placeholder:text-neutral-500;
+  }
+
+  /* Small numeric fields: weight, reps, miles, calories. */
+  .input-sm {
+    @apply w-16 rounded-lg bg-neutral-800 px-2 py-2 text-center outline-none placeholder:text-neutral-500;
+  }
+}
+
+/* Inputs must be >=16px or iOS Safari zooms the viewport on focus. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
