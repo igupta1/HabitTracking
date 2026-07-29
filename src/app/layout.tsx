@@ -4,16 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Habits',
   description: 'Ishaan + Saloni daily accountability',
-  manifest: '/manifest.json',
-  icons: {
-    icon: '/icons/icon-192.png',
-    apple: '/icons/apple-touch-icon.png',
-  },
-  appleWebApp: {
-    capable: true,
-    title: 'Habits',
-    statusBarStyle: 'black-translucent',
-  },
+  icons: { icon: '/icons/icon-192.png' },
 }
 
 export const viewport: Viewport = {

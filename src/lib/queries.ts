@@ -74,10 +74,6 @@ export function progress(user: UserId, d: DayData): { done: number; total: numbe
   return { done: hs.filter((h) => isDone(h, d)).length, total: hs.length }
 }
 
-/** Remaining task titles — what the partner view leads with. */
-export function remainingTasks(d: DayData): string[] {
-  return d.tasks.filter((t) => !t.done).map((t) => t.title)
-}
 
 /**
  * Strength workout names this user has typed before ("Push", "Pull", "Legs"),

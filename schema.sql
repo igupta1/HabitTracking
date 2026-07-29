@@ -1,6 +1,8 @@
 -- Habits: Ishaan + Saloni. Two users, so user_id is just 'ishaan' | 'saloni'
 -- and there is no users table. Apply with `npm run db:init` (idempotent).
 --
+-- 5 tables: toggles, tasks, food, weights, workouts.
+--
 -- Both users are in America/Los_Angeles, so `day` is a plain date and the
 -- boundary is computed once in src/lib/day.ts.
 
@@ -59,22 +61,5 @@ create table if not exists workouts (
 );
 create index if not exists workouts_user_day on workouts (user_id, day);
 
--- Every completion writes one row: the push body, plus a free history log.
--- A kind='daily_summary' row also marks the 8pm summary as sent for that day.
-create table if not exists events (
-  id         uuid primary key default gen_random_uuid(),
-  actor      text not null,
-  kind       text not null,
-  day        date not null,
-  summary    text not null,
-  created_at timestamptz not null default now()
-);
-create index if not exists events_created on events (created_at desc);
-
-create table if not exists push_subs (
-  endpoint   text primary key,
-  user_id    text not null,
-  p256dh     text not null,
-  auth       text not null,
-  created_at timestamptz not null default now()
-);
+-- No events or push tables: there are no notifications. Both people see each
+-- other's day side by side on the same page instead.
