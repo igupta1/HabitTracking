@@ -7,13 +7,15 @@ if (!url) throw new Error('DATABASE_URL is not set')
 // connections until Postgres refuses new ones.
 const g = globalThis as unknown as { __sql?: ReturnType<typeof postgres> }
 
+/** The local docker Postgres doesn't serve TLS; every hosted one requires it. */
+const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(url)
+
 export const sql =
   g.__sql ??
   postgres(url, {
     max: 5,
     idle_timeout: 20,
-    // Railway's public proxy needs TLS; its internal hostname doesn't.
-    ssl: url.includes('rlwy.net') || url.includes('proxy.rlwy') ? 'require' : undefined,
+    ssl: isLocal ? undefined : 'require',
   })
 
 if (process.env.NODE_ENV !== 'production') g.__sql = sql
