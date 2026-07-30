@@ -142,6 +142,17 @@ export async function setTaskPriority(u: string, id: string, priority: number) {
   refresh()
 }
 
+/** Rename in place. An empty title is a no-op — deleting is the ✕. */
+export async function renameTask(u: string, id: string, title: string) {
+  const user = check(u)
+  const t = title.trim()
+  if (!t) return
+  if (!(await ownsRow('tasks', id, user))) return
+
+  await sql`update tasks set title = ${t} where id = ${id}`
+  refresh()
+}
+
 export async function toggleTask(u: string, id: string) {
   const user = check(u)
   if (!(await ownsRow('tasks', id, user))) return

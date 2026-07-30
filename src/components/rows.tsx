@@ -6,6 +6,7 @@ import {
   setCounter,
   addTask,
   setTaskPriority,
+  renameTask,
   toggleTask,
   addFood,
   updateFood,
@@ -51,8 +52,9 @@ function CheckButton({ user, habit, done, readOnly }: P & { done: boolean }) {
   )
 }
 
-function Title({ children, done }: { children: React.ReactNode; done?: boolean }) {
-  return <span className={`flex-1 ${done ? 'text-neutral-400 line-through' : ''}`}>{children}</span>
+/** Habit titles never cross off — the check alone says it's done. */
+function Title({ children }: { children: React.ReactNode }) {
+  return <span className="flex-1">{children}</span>
 }
 
 /**
@@ -92,7 +94,7 @@ function ToggleRow({ user, habit, readOnly, done }: P & { done: boolean }) {
       className={`tap flex w-full items-center gap-3 px-4 py-3 text-left ${pending ? 'opacity-50' : ''}`}
     >
       <Check on={done} />
-      <Title done={done}>{habit.title}</Title>
+      <Title>{habit.title}</Title>
     </Tag>
   )
 }
@@ -150,6 +152,41 @@ function Priority({ value, onChange }: { value: number; onChange: (v: number) =>
   )
 }
 
+/** Crossed off wins over the P1 red — it's finished, not urgent. */
+function taskTone(t: TaskRow) {
+  if (t.done) return 'text-neutral-500 line-through'
+  return t.priority === 1 ? 'text-red-400' : ''
+}
+
+/**
+ * Always-editable title, saving on blur, like FoodEntry. Because the text is an
+ * input, the check is what you tap to complete a task — not the whole line.
+ */
+function TaskTitle({ user, task }: { user: UserId; task: TaskRow }) {
+  const [text, setText] = useState(task.title)
+  const [pending, start] = useTransition()
+
+  function save() {
+    const t = text.trim()
+    // Blank reverts rather than deletes — the ✕ is how you get rid of a task.
+    if (!t) return setText(task.title)
+    if (t !== task.title) start(() => renameTask(user, task.id, t))
+  }
+
+  return (
+    <input
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+      aria-label={`Rename ${task.title}`}
+      className={`-mr-1 min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 outline-none focus:bg-neutral-800 ${taskTone(
+        task
+      )} ${pending ? 'opacity-50' : ''}`}
+    />
+  )
+}
+
 function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]; done: boolean }) {
   const cats = habit.categories
   const [title, setTitle] = useState('')
@@ -194,24 +231,23 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
             )}
             {g.items.map((t) => (
               <div key={t.id} className="flex items-center gap-2 py-1.5 pl-12 pr-4">
-                <div
-                  onClick={readOnly ? undefined : () => start(() => toggleTask(user, t.id))}
-                  className="tap flex flex-1 items-center gap-3 text-left"
-                >
-                  <Check on={t.done} />
-                  <span
-                    className={
-                      t.done
-                        ? // Crossed off wins over the P1 red — it's finished, not urgent.
-                          'text-neutral-500 line-through'
-                        : t.priority === 1
-                          ? 'text-red-400'
-                          : ''
-                    }
-                  >
-                    {t.title}
-                  </span>
-                </div>
+                {readOnly ? (
+                  <div className="flex flex-1 items-center gap-3">
+                    <Check on={t.done} />
+                    <span className={taskTone(t)}>{t.title}</span>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => start(() => toggleTask(user, t.id))}
+                      className="tap shrink-0"
+                      aria-label={`Mark ${t.title} ${t.done ? 'not done' : 'done'}`}
+                    >
+                      <Check on={t.done} />
+                    </button>
+                    <TaskTitle key={t.title} user={user} task={t} />
+                  </>
+                )}
                 {cats &&
                   (readOnly ? (
                     t.priority && (
