@@ -2,6 +2,9 @@
  * The two goal sets. This is a plain constant on purpose — editing this file
  * and pushing is simpler than any admin UI, and habit_key is stored as text so
  * removing a habit here leaves old entries intact.
+ *
+ * Section and habit titles are Title Case — every word capitalised, including
+ * the small ones ("Call With Saloni").
  */
 
 export const USERS = {
@@ -29,7 +32,13 @@ export type HabitKind =
   | 'tasks' // the morning-planned EOD list
   | 'weight' // daily body weight
 
-export const SECTIONS = ['Career', 'Physique', 'Cardio & Stretching', 'Family', 'Friends'] as const
+export const SECTIONS = [
+  'Career',
+  'Physique',
+  'Cardio & Stretching',
+  'Family/Partner',
+  'Friends',
+] as const
 export type Section = (typeof SECTIONS)[number]
 
 export type Habit = {
@@ -58,14 +67,14 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
     { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique' },
     { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: false },
-    { key: 'weight', title: 'Body weight', kind: 'weight', section: 'Physique' },
+    { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Physique' },
 
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching' },
     { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Cardio & Stretching' },
-    { key: 'pad', title: 'Wart pad', kind: 'toggle', section: 'Cardio & Stretching' },
+    { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Cardio & Stretching' },
 
-    { key: 'call_partner', title: 'Call with Saloni', kind: 'toggle', section: 'Family' },
-    { key: 'future_date', title: 'Future Date Planned', kind: 'toggle', section: 'Family' },
+    { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Family/Partner' },
+    { key: 'future_date', title: 'Future Date Planned', kind: 'toggle', section: 'Family/Partner' },
 
     { key: 'call_friend', title: 'Call A Friend', kind: 'toggle', section: 'Friends' },
   ],
@@ -75,16 +84,16 @@ export const HABITS: Record<UserId, Habit[]> = {
 
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
     { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: true },
-    { key: 'weight', title: 'Body weight', kind: 'weight', section: 'Physique' },
+    { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Physique' },
 
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching' },
     { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Cardio & Stretching' },
     { key: 'water', title: 'Water', kind: 'counter', section: 'Cardio & Stretching', target: 10 },
 
-    { key: 'call_partner', title: 'Call with Ishaan', kind: 'toggle', section: 'Family' },
-    { key: 'call_family', title: 'Call a family member', kind: 'toggle', section: 'Family' },
+    { key: 'call_partner', title: 'Call With Ishaan', kind: 'toggle', section: 'Family/Partner' },
+    { key: 'call_family', title: 'Call A Family Member', kind: 'toggle', section: 'Family/Partner' },
 
-    { key: 'weekend_plans', title: 'Weekend plans', kind: 'toggle', section: 'Friends' },
+    { key: 'weekend_plans', title: 'Weekend Plans', kind: 'toggle', section: 'Friends' },
   ],
 }
 
