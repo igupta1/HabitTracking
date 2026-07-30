@@ -40,6 +40,24 @@ function Title({ children, done }: { children: React.ReactNode; done?: boolean }
   return <span className={`flex-1 ${done ? 'text-neutral-400 line-through' : ''}`}>{children}</span>
 }
 
+/**
+ * Explicit submit button. Not just an affordance: a form with more than one
+ * blocking field and no submit button never implicitly submits on Enter, which
+ * is what made Saloni's two-field food log impossible to add to.
+ */
+function Add({ disabled }: { disabled?: boolean }) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      className="tap grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent text-xl font-medium leading-none text-black disabled:opacity-40"
+      aria-label="Add"
+    >
+      +
+    </button>
+  )
+}
+
 function X({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} className="tap text-neutral-600" aria-label="Delete">
@@ -191,12 +209,15 @@ function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
           }}
           className="px-4 pb-3 pl-12 pt-1"
         >
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={tasks.length ? 'Add another…' : 'What are you doing today?'}
-            className="input w-full"
-          />
+          <div className="flex gap-2">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={tasks.length ? 'Add another…' : 'What are you doing today?'}
+              className="input min-w-0 flex-1"
+            />
+            <Add disabled={!title.trim()} />
+          </div>
           {cats && (
             <div className="mt-1.5 flex gap-2">
               <select
@@ -278,11 +299,6 @@ function FoodRowGroup({ user, habit, readOnly, entries }: P & { entries: FoodRow
       <div className="flex items-center gap-3 px-4 pt-3">
         <Check on={entries.length > 0} />
         <span className="flex-1 font-medium">{habit.title}</span>
-        {habit.calories && entries.some((e) => e.calories) && (
-          <span className="tabular-nums text-sm text-neutral-400">
-            {entries.reduce((s, e) => s + (e.calories ?? 0), 0)} cal
-          </span>
-        )}
       </div>
 
       <div className="mt-1">
@@ -297,6 +313,15 @@ function FoodRowGroup({ user, habit, readOnly, entries }: P & { entries: FoodRow
           )
         )}
       </div>
+
+      {habit.calories && entries.length > 0 && (
+        <div className="mt-1 flex items-center border-t border-neutral-800 py-2 pl-12 pr-4 text-sm">
+          <span className="flex-1 text-neutral-400">Total</span>
+          <span className="tabular-nums font-medium">
+            {entries.reduce((s, e) => s + (e.calories ?? 0), 0)} cal
+          </span>
+        </div>
+      )}
 
       {!readOnly && (
         <form
@@ -326,6 +351,7 @@ function FoodRowGroup({ user, habit, readOnly, entries }: P & { entries: FoodRow
               className="input-sm"
             />
           )}
+          <Add disabled={!text.trim()} />
         </form>
       )}
     </div>

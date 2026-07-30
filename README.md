@@ -59,7 +59,13 @@ collect under a trailing "Other" heading rather than disappearing.
 than app logic. Delete the logged one to change it. Cardio is unrestricted.
 
 Food entries are always-editable inputs that save on blur — clearing the text
-deletes the entry.
+deletes the entry. Saloni's log totals its calories in a row at the bottom.
+
+Every add form has an explicit `+` submit button, and needs one: a form with
+more than one blocking field and no submit button never implicitly submits on
+Enter. That silently made Saloni's two-field (text + calories) food log
+impossible to add to, while Ishaan's one-field version worked fine. Don't
+remove those buttons.
 
 ## Local setup
 
