@@ -44,6 +44,23 @@ one place to change when a habit kind changes.
 Adding or changing a habit means editing `src/lib/habits.ts` and pushing.
 `habit_key` is stored as text, so removing a habit leaves old entries intact.
 
+Per-person differences all live in that config:
+
+- **Task categories** — Ishaan's `tasks` habit sets `categories: ['SWE',
+  'Project', 'Misc']`, so his list groups under those headers in that order,
+  P1 first within each. Saloni's has no `categories`, so hers is a flat list
+  with no priorities. Give her some by adding the field.
+- **Calories** — only shown on Saloni's food log (`calories: true`).
+
+Tasks that predate categories, or whose category was removed from the config,
+collect under a trailing "Other" heading rather than disappearing.
+
+**One strength workout per day**, enforced by a partial unique index rather
+than app logic. Delete the logged one to change it. Cardio is unrestricted.
+
+Food entries are always-editable inputs that save on blur — clearing the text
+deletes the entry.
+
 ## Local setup
 
 ```bash

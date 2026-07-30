@@ -5,8 +5,10 @@ import {
   toggleHabit,
   setCounter,
   addTask,
+  setTaskPriority,
   toggleTask,
   addFood,
+  updateFood,
   setWeight,
   logStrength,
   logCardio,
@@ -92,10 +94,42 @@ function CounterRow({ user, habit, readOnly, count }: P & { count: number }) {
 
 // ---------------------------------------------------------------- tasks
 
+function Priority({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="rounded bg-neutral-800 px-1 py-0.5 text-xs tabular-nums text-neutral-300 outline-none"
+      aria-label="Priority"
+    >
+      {[1, 2, 3].map((n) => (
+        <option key={n} value={n}>
+          P{n}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
+  const cats = habit.categories
   const [title, setTitle] = useState('')
+  const [category, setCategory] = useState(cats?.[0] ?? '')
+  const [priority, setPriority] = useState(2)
   const [pending, start] = useTransition()
   const doneCount = tasks.filter((t) => t.done).length
+
+  // Tasks arrive sorted by priority then created_at, so grouping preserves that.
+  // The trailing "Other" group catches anything predating categories.
+  const groups = cats
+    ? [
+        ...cats.map((c) => ({ label: c, items: tasks.filter((t) => t.category === c) })),
+        {
+          label: 'Other',
+          items: tasks.filter((t) => !t.category || !cats.includes(t.category)),
+        },
+      ].filter((g) => g.items.length > 0)
+    : [{ label: '', items: tasks }]
 
   return (
     <div className={pending ? 'opacity-50' : ''}>
@@ -112,16 +146,36 @@ function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
       )}
 
       <div className="mt-1">
-        {tasks.map((t) => (
-          <div key={t.id} className="flex items-center gap-3 py-2 pl-12 pr-4">
-            <div
-              onClick={readOnly ? undefined : () => start(() => toggleTask(user, t.id))}
-              className="tap flex flex-1 items-center gap-3 text-left"
-            >
-              <Check on={t.done} />
-              <span className={t.done ? 'text-neutral-500 line-through' : ''}>{t.title}</span>
-            </div>
-            {!readOnly && <X onClick={() => start(() => deleteRow(user, 'tasks', t.id))} />}
+        {groups.map((g) => (
+          <div key={g.label}>
+            {g.label && (
+              <p className="pl-12 pr-4 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-600">
+                {g.label}
+              </p>
+            )}
+            {g.items.map((t) => (
+              <div key={t.id} className="flex items-center gap-2 py-1.5 pl-12 pr-4">
+                <div
+                  onClick={readOnly ? undefined : () => start(() => toggleTask(user, t.id))}
+                  className="tap flex flex-1 items-center gap-3 text-left"
+                >
+                  <Check on={t.done} />
+                  <span className={t.done ? 'text-neutral-500 line-through' : ''}>{t.title}</span>
+                </div>
+                {cats &&
+                  (readOnly ? (
+                    t.priority && (
+                      <span className="text-xs tabular-nums text-neutral-500">P{t.priority}</span>
+                    )
+                  ) : (
+                    <Priority
+                      value={t.priority ?? 2}
+                      onChange={(v) => start(() => setTaskPriority(user, t.id, v))}
+                    />
+                  ))}
+                {!readOnly && <X onClick={() => start(() => deleteRow(user, 'tasks', t.id))} />}
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -133,9 +187,9 @@ function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
             const v = title.trim()
             if (!v) return
             setTitle('')
-            start(() => addTask(user, v))
+            start(() => addTask(user, v, cats ? category : null, cats ? priority : null))
           }}
-          className="px-4 pb-3 pl-12"
+          className="px-4 pb-3 pl-12 pt-1"
         >
           <input
             value={title}
@@ -143,6 +197,23 @@ function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
             placeholder={tasks.length ? 'Add another…' : 'What are you doing today?'}
             className="input w-full"
           />
+          {cats && (
+            <div className="mt-1.5 flex gap-2">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
+                aria-label="Category"
+              >
+                {cats.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <Priority value={priority} onChange={setPriority} />
+            </div>
+          )}
         </form>
       )}
     </div>
@@ -151,7 +222,53 @@ function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
 
 // ---------------------------------------------------------------- food
 
-function FoodRow({ user, habit, readOnly, entries }: P & { entries: FoodRow[] }) {
+/** Always-editable, saving on blur — no separate edit mode. */
+function FoodEntry({
+  user,
+  entry,
+  showCalories,
+}: {
+  user: UserId
+  entry: FoodRow
+  showCalories?: boolean
+}) {
+  const [text, setText] = useState(entry.text)
+  const [cal, setCal] = useState(entry.calories != null ? String(entry.calories) : '')
+  const [pending, start] = useTransition()
+
+  function save() {
+    const t = text.trim()
+    const c = cal ? Number(cal) : null
+    if (t === entry.text && c === entry.calories) return
+    start(() => updateFood(user, entry.id, t, c))
+  }
+
+  return (
+    <div className={`flex items-center gap-2 py-1 pl-12 pr-4 ${pending ? 'opacity-50' : ''}`}>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+        className="input min-w-0 flex-1 py-1 text-sm"
+      />
+      {showCalories && (
+        <input
+          value={cal}
+          onChange={(e) => setCal(e.target.value)}
+          onBlur={save}
+          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+          inputMode="numeric"
+          placeholder="cal"
+          className="input-sm py-1 text-sm"
+        />
+      )}
+      <X onClick={() => start(() => deleteRow(user, 'food', entry.id))} />
+    </div>
+  )
+}
+
+function FoodRowGroup({ user, habit, readOnly, entries }: P & { entries: FoodRow[] }) {
   const [text, setText] = useState('')
   const [cal, setCal] = useState('')
   const [pending, start] = useTransition()
@@ -169,15 +286,16 @@ function FoodRow({ user, habit, readOnly, entries }: P & { entries: FoodRow[] })
       </div>
 
       <div className="mt-1">
-        {entries.map((e) => (
-          <div key={e.id} className="flex items-center gap-2 py-1.5 pl-12 pr-4 text-sm">
-            <span className="flex-1">
+        {entries.map((e) =>
+          readOnly ? (
+            <div key={e.id} className="py-1.5 pl-12 pr-4 text-sm">
               {e.text}
               {e.calories != null && <span className="ml-2 text-neutral-500">{e.calories} cal</span>}
-            </span>
-            {!readOnly && <X onClick={() => start(() => deleteRow(user, 'food', e.id))} />}
-          </div>
-        ))}
+            </div>
+          ) : (
+            <FoodEntry key={e.id} user={user} entry={e} showCalories={habit.calories} />
+          )
+        )}
       </div>
 
       {!readOnly && (
@@ -191,7 +309,7 @@ function FoodRow({ user, habit, readOnly, entries }: P & { entries: FoodRow[] })
             setCal('')
             start(() => addFood(user, v, c))
           }}
-          className="flex gap-2 px-4 pb-3 pl-12"
+          className="flex gap-2 px-4 pb-3 pl-12 pt-1"
         >
           <input
             value={text}
@@ -307,7 +425,8 @@ function StrengthRow({
         <WorkoutLine key={w.id} user={user} workout={w} readOnly={readOnly} />
       ))}
 
-      {!readOnly && (
+      {/* One strength workout per day — delete the logged one to change it. */}
+      {!readOnly && mine.length === 0 && (
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -322,7 +441,7 @@ function StrengthRow({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             list={`workout-names-${user}`}
-            placeholder={mine.length ? 'Log another…' : 'Push, Pull, Legs, Rest…'}
+            placeholder="Push, Pull, Legs, Rest…"
             className="input w-full"
           />
           <datalist id={`workout-names-${user}`}>
@@ -442,7 +561,7 @@ export function HabitRow({
     case 'tasks':
       return <TasksRow {...p} tasks={day.tasks} />
     case 'food':
-      return <FoodRow {...p} entries={day.food} />
+      return <FoodRowGroup {...p} entries={day.food} />
     case 'weight':
       return <WeightRow {...p} lbs={day.weight} />
     case 'strength':

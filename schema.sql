@@ -22,6 +22,9 @@ create table if not exists tasks (
   day        date not null,
   title      text not null,
   done       boolean not null default false,
+  -- Only for users whose `tasks` habit defines categories (see lib/habits.ts).
+  category   text,
+  priority   int,                             -- 1..3, P1 highest
   created_at timestamptz not null default now()
 );
 create index if not exists tasks_user_day on tasks (user_id, day);
@@ -58,6 +61,9 @@ create table if not exists workouts (
   created_at       timestamptz not null default now()
 );
 create index if not exists workouts_user_day on workouts (user_id, day);
+-- One strength workout per day. Cardio is still unrestricted.
+create unique index if not exists workouts_one_strength_per_day
+  on workouts (user_id, day) where mode = 'strength';
 
 -- No events or push tables: there are no notifications. Both people see each
 -- other's day side by side on the same page instead.

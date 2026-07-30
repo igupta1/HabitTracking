@@ -2,7 +2,13 @@ import { sql } from '@/db'
 import { habitsFor, type Habit, type UserId } from './habits'
 import { toDay } from './day'
 
-export type TaskRow = { id: string; title: string; done: boolean }
+export type TaskRow = {
+  id: string
+  title: string
+  done: boolean
+  category: string | null
+  priority: number | null
+}
 export type FoodRow = { id: string; text: string; calories: number | null }
 export type WorkoutRow = {
   id: string
@@ -27,8 +33,9 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
       select habit_key, done, count from toggles
       where user_id = ${user} and day = ${day}`,
     sql<TaskRow[]>`
-      select id, title, done from tasks
-      where user_id = ${user} and day = ${day} order by created_at`,
+      select id, title, done, category, priority from tasks
+      where user_id = ${user} and day = ${day}
+      order by priority nulls last, created_at`,
     sql<FoodRow[]>`
       select id, text, calories from food
       where user_id = ${user} and day = ${day} order by created_at`,

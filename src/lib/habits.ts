@@ -41,15 +41,23 @@ export type Habit = {
   target?: number
   /** food only — whether to show the calorie field */
   calories?: boolean
+  /** tasks only — grouping headers, rendered in this order. Omit for a flat list. */
+  categories?: string[]
 }
 
 export const HABITS: Record<UserId, Habit[]> = {
   ishaan: [
-    { key: 'tasks', title: 'Tasks', kind: 'tasks', section: 'Career' },
+    {
+      key: 'tasks',
+      title: 'Tasks',
+      kind: 'tasks',
+      section: 'Career',
+      categories: ['SWE', 'Project', 'Misc'],
+    },
 
-    { key: 'strength', title: 'Workout', kind: 'strength', section: 'Physique' },
+    { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
     { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique' },
-    { key: 'food', title: 'Food log', kind: 'food', section: 'Physique', calories: false },
+    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: false },
     { key: 'weight', title: 'Body weight', kind: 'weight', section: 'Physique' },
 
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching' },
@@ -66,8 +74,8 @@ export const HABITS: Record<UserId, Habit[]> = {
   saloni: [
     { key: 'tasks', title: 'Tasks', kind: 'tasks', section: 'Career' },
 
-    { key: 'strength', title: 'Workout', kind: 'strength', section: 'Physique' },
-    { key: 'food', title: 'Food log', kind: 'food', section: 'Physique', calories: true },
+    { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
+    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: true },
     { key: 'weight', title: 'Body weight', kind: 'weight', section: 'Physique' },
 
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching' },

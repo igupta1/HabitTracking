@@ -72,12 +72,33 @@ export async function setCounter(u: string, key: string, delta: number) {
 
 // ---------------------------------------------------------------- tasks
 
-export async function addTask(u: string, title: string) {
+export async function addTask(
+  u: string,
+  title: string,
+  category?: string | null,
+  priority?: number | null
+) {
   const user = check(u)
   const t = title.trim()
   if (!t) return
 
-  await sql`insert into tasks (user_id, day, title) values (${user}, ${toDay()}, ${t})`
+  // Only users whose tasks habit defines categories send these.
+  const cats = habit(user, 'tasks')?.categories
+  const cat = cats && category && cats.includes(category) ? category : null
+  const pri = cats && priority && priority >= 1 && priority <= 3 ? Math.round(priority) : null
+
+  await sql`
+    insert into tasks (user_id, day, title, category, priority)
+    values (${user}, ${toDay()}, ${t}, ${cat}, ${pri})`
+  refresh()
+}
+
+export async function setTaskPriority(u: string, id: string, priority: number) {
+  const user = check(u)
+  if (priority < 1 || priority > 3) return
+  if (!(await ownsRow('tasks', id, user))) return
+
+  await sql`update tasks set priority = ${Math.round(priority)} where id = ${id}`
   refresh()
 }
 
@@ -95,11 +116,35 @@ export async function addFood(u: string, text: string, calories?: number | null)
   const t = text.trim()
   if (!t) return
 
-  const cal = calories && calories > 0 ? Math.round(calories) : null
   await sql`
     insert into food (user_id, day, text, calories)
-    values (${user}, ${toDay()}, ${t}, ${cal})`
+    values (${user}, ${toDay()}, ${t}, ${cleanCalories(calories)})`
   refresh()
+}
+
+export async function updateFood(
+  u: string,
+  id: string,
+  text: string,
+  calories?: number | null
+) {
+  const user = check(u)
+  if (!(await ownsRow('food', id, user))) return
+
+  const t = text.trim()
+  // Clearing the text is how you delete an entry by editing.
+  if (!t) {
+    await sql`delete from food where id = ${id}`
+  } else {
+    await sql`
+      update food set text = ${t}, calories = ${cleanCalories(calories)}
+      where id = ${id}`
+  }
+  refresh()
+}
+
+function cleanCalories(c?: number | null): number | null {
+  return c && c > 0 ? Math.round(c) : null
 }
 
 // ---------------------------------------------------------------- weight
@@ -118,16 +163,19 @@ export async function setWeight(u: string, lbs: number) {
 
 /**
  * Strength is just the typed name of the session ("Push", "Legs", "SolidCore",
- * "Rest"). Set-by-set logging stays in RepCount.
+ * "Rest"). Set-by-set logging stays in RepCount. One per day.
  */
 export async function logStrength(u: string, name: string) {
   const user = check(u)
   const n = name.trim()
   if (!n) return
 
+  // A partial unique index enforces one strength workout per day; a second
+  // insert is silently ignored rather than erroring in the UI.
   await sql`
     insert into workouts (user_id, day, mode, name)
-    values (${user}, ${toDay()}, 'strength', ${n})`
+    values (${user}, ${toDay()}, 'strength', ${n})
+    on conflict do nothing`
   refresh()
 }
 
