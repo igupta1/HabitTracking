@@ -35,7 +35,7 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
     sql<TaskRow[]>`
       select id, title, done, category, priority from tasks
       where user_id = ${user} and day = ${day}
-      order by priority nulls last, created_at`,
+      order by done, priority nulls last, created_at`,
     sql<FoodRow[]>`
       select id, text, calories from food
       where user_id = ${user} and day = ${day} order by created_at`,
@@ -67,8 +67,14 @@ function impliedByData(h: Habit, d: DayData): boolean {
       return d.food.length > 0
     case 'weight':
       return d.weight !== null
-    case 'tasks':
-      return d.tasks.length > 0 && d.tasks.every((t) => t.done)
+    case 'tasks': {
+      if (d.tasks.length === 0) return false
+      // Clearing the must-dos counts as done, even with P2/P3 left over. With no
+      // P1s to clear (always the case for Saloni, who has no priorities) it
+      // falls back to needing the whole list.
+      const p1 = d.tasks.filter((t) => t.priority === 1)
+      return p1.length > 0 ? p1.every((t) => t.done) : d.tasks.every((t) => t.done)
+    }
     default:
       return false
   }

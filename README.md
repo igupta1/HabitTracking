@@ -53,7 +53,16 @@ Per-person differences all live in that config:
 - **Calories** — only shown on Saloni's food log (`calories: true`).
 
 Tasks that predate categories, or whose category was removed from the config,
-collect under a trailing "Other" heading rather than disappearing.
+collect under a trailing "Other" heading rather than disappearing. Crossed-off
+tasks sink to the bottom of their category.
+
+The **Tasks** habit counts as done once every **P1** is done, even with P2/P3
+left over — clearing the must-dos is the bar. With no P1s on the list (always
+the case for Saloni, who has no priorities) it falls back to needing everything
+done.
+
+Tasks are **per-day and do not roll over.** Nothing moves an unfinished task to
+tomorrow; tomorrow starts empty.
 
 **One strength workout per day**, enforced by a partial unique index rather
 than app logic. Delete the logged one to change it. Cardio is unrestricted.
