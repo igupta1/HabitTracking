@@ -77,6 +77,7 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'future_date', title: 'Future Date Planned', kind: 'toggle', section: 'Family/Partner' },
 
     { key: 'call_friend', title: 'Call A Friend', kind: 'toggle', section: 'Friends' },
+    { key: 'weekend_plans', title: 'Have Weekend Plans', kind: 'toggle', section: 'Friends' },
   ],
 
   saloni: [
