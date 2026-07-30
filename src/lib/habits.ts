@@ -65,10 +65,9 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'pad', title: 'Wart pad', kind: 'toggle', section: 'Cardio & Stretching' },
 
     { key: 'call_partner', title: 'Call with Saloni', kind: 'toggle', section: 'Family' },
-    { key: 'future_date', title: 'Future date planned', kind: 'toggle', section: 'Family' },
+    { key: 'future_date', title: 'Future Date Planned', kind: 'toggle', section: 'Family' },
 
-    { key: 'call_friend', title: 'Call a friend', kind: 'toggle', section: 'Friends' },
-    { key: 'weekend_plans', title: 'Weekend plans', kind: 'toggle', section: 'Friends' },
+    { key: 'call_friend', title: 'Call A Friend', kind: 'toggle', section: 'Friends' },
   ],
 
   saloni: [
