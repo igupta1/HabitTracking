@@ -199,12 +199,29 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
                   className="tap flex flex-1 items-center gap-3 text-left"
                 >
                   <Check on={t.done} />
-                  <span className={t.done ? 'text-neutral-500 line-through' : ''}>{t.title}</span>
+                  <span
+                    className={
+                      t.done
+                        ? // Crossed off wins over the P1 red — it's finished, not urgent.
+                          'text-neutral-500 line-through'
+                        : t.priority === 1
+                          ? 'text-red-400'
+                          : ''
+                    }
+                  >
+                    {t.title}
+                  </span>
                 </div>
                 {cats &&
                   (readOnly ? (
                     t.priority && (
-                      <span className="text-xs tabular-nums text-neutral-500">P{t.priority}</span>
+                      <span
+                        className={`text-xs tabular-nums ${
+                          t.priority === 1 ? 'text-red-400' : 'text-neutral-500'
+                        }`}
+                      >
+                        P{t.priority}
+                      </span>
                     )
                   ) : (
                     <Priority
