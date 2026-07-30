@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import {
-  toggleHabit,
+  toggleCheck,
   setCounter,
   addTask,
   setTaskPriority,
@@ -33,6 +33,21 @@ function Check({ on }: { on: boolean }) {
     >
       ✓
     </span>
+  )
+}
+
+/** Every habit's check is tappable; see toggleCheck for what a tap stores. */
+function CheckButton({ user, habit, done, readOnly }: P & { done: boolean }) {
+  const [pending, start] = useTransition()
+  if (readOnly) return <Check on={done} />
+  return (
+    <button
+      onClick={() => start(() => toggleCheck(user, habit.key, done))}
+      className={`tap shrink-0 ${pending ? 'opacity-50' : ''}`}
+      aria-label={`Mark ${habit.title} ${done ? 'not done' : 'done'}`}
+    >
+      <Check on={done} />
+    </button>
   )
 }
 
@@ -73,7 +88,7 @@ function ToggleRow({ user, habit, readOnly, done }: P & { done: boolean }) {
   const Tag = readOnly ? 'div' : 'button'
   return (
     <Tag
-      onClick={readOnly ? undefined : () => start(() => toggleHabit(user, habit.key))}
+      onClick={readOnly ? undefined : () => start(() => toggleCheck(user, habit.key, done))}
       className={`tap flex w-full items-center gap-3 px-4 py-3 text-left ${pending ? 'opacity-50' : ''}`}
     >
       <Check on={done} />
@@ -84,13 +99,19 @@ function ToggleRow({ user, habit, readOnly, done }: P & { done: boolean }) {
 
 // ---------------------------------------------------------------- counter
 
-function CounterRow({ user, habit, readOnly, count }: P & { count: number }) {
+function CounterRow({
+  user,
+  habit,
+  readOnly,
+  count,
+  done,
+}: P & { count: number; done: boolean }) {
   const [pending, start] = useTransition()
   const target = habit.target ?? 1
 
   return (
     <div className={`flex items-center gap-3 px-4 py-3 ${pending ? 'opacity-50' : ''}`}>
-      <Check on={count >= target} />
+      <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
       <Title>{habit.title}</Title>
       <span className="tabular-nums text-sm text-neutral-400">
         {count}/{target}
@@ -129,7 +150,7 @@ function Priority({ value, onChange }: { value: number; onChange: (v: number) =>
   )
 }
 
-function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
+function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]; done: boolean }) {
   const cats = habit.categories
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState(cats?.[0] ?? '')
@@ -152,7 +173,7 @@ function TasksRow({ user, habit, readOnly, tasks }: P & { tasks: TaskRow[] }) {
   return (
     <div className={pending ? 'opacity-50' : ''}>
       <div className="flex items-center gap-3 px-4 pt-3">
-        <Check on={tasks.length > 0 && doneCount === tasks.length} />
+        <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
         <span className="tabular-nums text-sm text-neutral-400">
           {doneCount}/{tasks.length}
@@ -289,7 +310,13 @@ function FoodEntry({
   )
 }
 
-function FoodRowGroup({ user, habit, readOnly, entries }: P & { entries: FoodRow[] }) {
+function FoodRowGroup({
+  user,
+  habit,
+  readOnly,
+  entries,
+  done,
+}: P & { entries: FoodRow[]; done: boolean }) {
   const [text, setText] = useState('')
   const [cal, setCal] = useState('')
   const [pending, start] = useTransition()
@@ -297,7 +324,7 @@ function FoodRowGroup({ user, habit, readOnly, entries }: P & { entries: FoodRow
   return (
     <div className={pending ? 'opacity-50' : ''}>
       <div className="flex items-center gap-3 px-4 pt-3">
-        <Check on={entries.length > 0} />
+        <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
       </div>
 
@@ -360,7 +387,13 @@ function FoodRowGroup({ user, habit, readOnly, entries }: P & { entries: FoodRow
 
 // ---------------------------------------------------------------- weight
 
-function WeightRow({ user, habit, readOnly, lbs }: P & { lbs: number | null }) {
+function WeightRow({
+  user,
+  habit,
+  readOnly,
+  lbs,
+  done,
+}: P & { lbs: number | null; done: boolean }) {
   const [value, setValue] = useState(lbs != null ? String(lbs) : '')
   const [pending, start] = useTransition()
 
@@ -371,7 +404,7 @@ function WeightRow({ user, habit, readOnly, lbs }: P & { lbs: number | null }) {
 
   return (
     <div className={`flex items-center gap-3 px-4 py-3 ${pending ? 'opacity-50' : ''}`}>
-      <Check on={lbs != null} />
+      <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
       <Title>{habit.title}</Title>
       {readOnly ? (
         <span className="tabular-nums text-sm text-neutral-400">{lbs ?? '—'}</span>
@@ -435,7 +468,8 @@ function StrengthRow({
   readOnly,
   workouts,
   names = [],
-}: P & { workouts: WorkoutRow[]; names?: string[] }) {
+  done,
+}: P & { workouts: WorkoutRow[]; names?: string[]; done: boolean }) {
   const [value, setValue] = useState('')
   const [pending, start] = useTransition()
   const mine = workouts.filter((w) => w.mode === 'strength')
@@ -443,7 +477,7 @@ function StrengthRow({
   return (
     <div className={pending ? 'opacity-50' : ''}>
       <div className="flex items-center gap-3 px-4 py-3">
-        <Check on={mine.length > 0} />
+        <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
       </div>
 
@@ -481,7 +515,13 @@ function StrengthRow({
   )
 }
 
-function CardioRow({ user, habit, readOnly, workouts }: P & { workouts: WorkoutRow[] }) {
+function CardioRow({
+  user,
+  habit,
+  readOnly,
+  workouts,
+  done,
+}: P & { workouts: WorkoutRow[]; done: boolean }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('run')
   const [miles, setMiles] = useState('')
@@ -496,7 +536,7 @@ function CardioRow({ user, habit, readOnly, workouts }: P & { workouts: WorkoutR
         onClick={readOnly ? undefined : () => setOpen((o) => !o)}
         className="tap flex w-full items-center gap-3 px-4 py-3 text-left"
       >
-        <Check on={mine.length > 0} />
+        <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
         {!readOnly && <span className="text-neutral-500">{open ? '−' : '+'}</span>}
       </div>
@@ -577,11 +617,12 @@ export function HabitRow({
   day,
   readOnly,
   names,
-}: P & { day: DayData; names?: string[] }) {
-  const p = { user, habit, readOnly }
+  done,
+}: P & { day: DayData; names?: string[]; done: boolean }) {
+  const p = { user, habit, readOnly, done }
   switch (habit.kind) {
     case 'toggle':
-      return <ToggleRow {...p} done={day.toggles[habit.key]?.done ?? false} />
+      return <ToggleRow {...p} />
     case 'counter':
       return <CounterRow {...p} count={day.toggles[habit.key]?.count ?? 0} />
     case 'tasks':

@@ -97,6 +97,11 @@ export function habit(user: UserId, key: string): Habit | undefined {
   return HABITS[user].find((h) => h.key === key)
 }
 
+/** Each kind appears at most once per person, so kind identifies the habit. */
+export function keyOfKind(user: UserId, kind: HabitKind): string | undefined {
+  return HABITS[user].find((h) => h.kind === kind)?.key
+}
+
 /** Sections that actually have habits for this user, in display order. */
 export function sectionsFor(user: UserId): Section[] {
   const present = new Set(HABITS[user].map((h) => h.section))

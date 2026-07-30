@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { partnerOf, habitsFor, sectionsFor, nameOf, isUserId, USERS, type UserId } from '@/lib/habits'
-import { loadDay, progress, recentWorkoutNames, type DayData } from '@/lib/queries'
+import { loadDay, progress, isDone, recentWorkoutNames, type DayData } from '@/lib/queries'
 import { toDay, formatDay } from '@/lib/day'
 import { HabitRow } from '@/components/rows'
 
@@ -55,6 +55,7 @@ function Column({
                     user={who}
                     habit={h}
                     day={day}
+                    done={isDone(h, day)}
                     readOnly={readOnly}
                     names={names}
                   />

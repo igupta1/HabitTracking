@@ -56,13 +56,9 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
   }
 }
 
-/** Whether a single habit counts as done for the day. */
-export function isDone(h: Habit, d: DayData): boolean {
+/** Whether today's data alone implies the habit is done. */
+function impliedByData(h: Habit, d: DayData): boolean {
   switch (h.kind) {
-    case 'toggle':
-      return d.toggles[h.key]?.done ?? false
-    case 'counter':
-      return (d.toggles[h.key]?.count ?? 0) >= (h.target ?? 1)
     case 'strength':
       return d.workouts.some((w) => w.mode === 'strength')
     case 'cardio':
@@ -73,6 +69,28 @@ export function isDone(h: Habit, d: DayData): boolean {
       return d.weight !== null
     case 'tasks':
       return d.tasks.length > 0 && d.tasks.every((t) => t.done)
+    default:
+      return false
+  }
+}
+
+/**
+ * Whether a single habit counts as done for the day.
+ *
+ * For toggles and counters the stored row *is* the state. For the data-backed
+ * kinds it's a manual override: the mere existence of a row means it was
+ * checked or unchecked by hand, and that beats what the data implies. Adding
+ * data deletes the row, so the automatic behaviour resumes.
+ */
+export function isDone(h: Habit, d: DayData): boolean {
+  const row = d.toggles[h.key]
+  switch (h.kind) {
+    case 'toggle':
+      return row?.done ?? false
+    case 'counter':
+      return (row?.count ?? 0) >= (h.target ?? 1)
+    default:
+      return row ? row.done : impliedByData(h, d)
   }
 }
 

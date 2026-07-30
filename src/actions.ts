@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { sql } from '@/db'
 import { toDay } from '@/lib/day'
-import { habit, isUserId, type UserId } from '@/lib/habits'
+import { habit, keyOfKind, isUserId, type HabitKind, type UserId } from '@/lib/habits'
 
 /**
  * There is no login: identity is the `/ishaan` or `/saloni` path, and every
@@ -42,17 +42,51 @@ export async function deleteRow(u: string, table: OwnedTable, id: string) {
 
 // ---------------------------------------------------------------- toggles
 
-export async function toggleHabit(u: string, key: string) {
+/**
+ * The check on every habit row. For toggles the stored row is the state; for
+ * counters checking fills it and unchecking empties it, keeping one source of
+ * truth; for the data-backed kinds the row is a manual override that beats what
+ * today's data implies (see isDone).
+ *
+ * Takes the currently-displayed state from the client so it doesn't need a read
+ * to know which way to flip.
+ */
+export async function toggleCheck(u: string, key: string, currentlyDone: boolean) {
   const user = check(u)
   const h = habit(user, key)
-  if (!h || h.kind !== 'toggle') return
+  if (!h) return
 
-  await sql`
-    insert into toggles (user_id, habit_key, day, done)
-    values (${user}, ${key}, ${toDay()}, true)
-    on conflict (user_id, habit_key, day)
-      do update set done = not toggles.done, updated_at = now()`
+  const day = toDay()
+  const next = !currentlyDone
+
+  if (h.kind === 'counter') {
+    const value = next ? (h.target ?? 1) : 0
+    await sql`
+      insert into toggles (user_id, habit_key, day, count)
+      values (${user}, ${key}, ${day}, ${value})
+      on conflict (user_id, habit_key, day)
+        do update set count = ${value}, updated_at = now()`
+  } else {
+    await sql`
+      insert into toggles (user_id, habit_key, day, done)
+      values (${user}, ${key}, ${day}, ${next})
+      on conflict (user_id, habit_key, day)
+        do update set done = ${next}, updated_at = now()`
+  }
   refresh()
+}
+
+/**
+ * Logging real data drops any manual override for that habit, so the check goes
+ * back to following the data. Only called on adds — deleting data already makes
+ * the implied state false on its own.
+ */
+async function clearOverride(user: UserId, kind: HabitKind) {
+  const key = keyOfKind(user, kind)
+  if (!key) return
+  await sql`
+    delete from toggles
+    where user_id = ${user} and habit_key = ${key} and day = ${toDay()}`
 }
 
 export async function setCounter(u: string, key: string, delta: number) {
@@ -95,6 +129,7 @@ export async function addTask(
   await sql`
     insert into tasks (user_id, day, title, category, priority)
     values (${user}, ${toDay()}, ${t}, ${cat}, ${pri})`
+  await clearOverride(user, 'tasks')
   refresh()
 }
 
@@ -111,6 +146,7 @@ export async function toggleTask(u: string, id: string) {
   const user = check(u)
   if (!(await ownsRow('tasks', id, user))) return
   await sql`update tasks set done = not done where id = ${id}`
+  await clearOverride(user, 'tasks')
   refresh()
 }
 
@@ -124,6 +160,7 @@ export async function addFood(u: string, text: string, calories?: number | null)
   await sql`
     insert into food (user_id, day, text, calories)
     values (${user}, ${toDay()}, ${t}, ${cleanCalories(calories)})`
+  await clearOverride(user, 'food')
   refresh()
 }
 
@@ -161,6 +198,7 @@ export async function setWeight(u: string, lbs: number) {
   await sql`
     insert into weights (user_id, day, lbs) values (${user}, ${toDay()}, ${lbs})
     on conflict (user_id, day) do update set lbs = ${lbs}`
+  await clearOverride(user, 'weight')
   refresh()
 }
 
@@ -181,6 +219,7 @@ export async function logStrength(u: string, name: string) {
     insert into workouts (user_id, day, mode, name)
     values (${user}, ${toDay()}, 'strength', ${n})
     on conflict do nothing`
+  await clearOverride(user, 'strength')
   refresh()
 }
 
@@ -195,5 +234,6 @@ export async function logCardio(
     insert into workouts (user_id, day, mode, name, distance_miles, duration_minutes)
     values (${user}, ${toDay()}, 'cardio', ${name},
             ${distanceMiles ?? null}, ${durationMinutes ?? null})`
+  await clearOverride(user, 'cardio')
   refresh()
 }
