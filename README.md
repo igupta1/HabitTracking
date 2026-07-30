@@ -61,8 +61,13 @@ left over — clearing the must-dos is the bar. With no P1s on the list (always
 the case for Saloni, who has no priorities) it falls back to needing everything
 done.
 
-Tasks are **per-day and do not roll over.** Nothing moves an unfinished task to
-tomorrow; tomorrow starts empty.
+**Unfinished tasks roll over.** Opening the page moves any task still open from
+an earlier day onto today — the row moves rather than being copied, so it stays
+one task with one id, and it keeps its original `created_at` so carried tasks
+sort above ones added today. There's no cron: loading the page is what advances
+the day, so a week away rolls everything forward at once. Finish it or ✕ it to
+make it stop coming back. Everything else (checks, food, weight, workouts) is
+per-day and starts empty.
 
 **One strength workout per day**, enforced by a partial unique index rather
 than app logic. Delete the logged one to change it. Cardio is unrestricted.

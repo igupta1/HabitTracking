@@ -27,6 +27,22 @@ export type DayData = {
   workouts: WorkoutRow[]
 }
 
+/**
+ * Unfinished tasks follow you forward: anything still open from an earlier day
+ * is moved onto `day` the first time someone loads the page. Moving the row
+ * rather than copying it keeps one task with one id — you can't finish
+ * yesterday's copy and still be staring at today's.
+ *
+ * Only ever called for today. `created_at` is untouched, so carried tasks sort
+ * above ones added today, and a task left open for a week keeps arriving until
+ * it's done or ✕'d.
+ */
+export async function rollOverTasks(user: UserId, day: string = toDay()): Promise<void> {
+  await sql`
+    update tasks set day = ${day}
+    where user_id = ${user} and day < ${day} and not done`
+}
+
 export async function loadDay(user: UserId, day: string = toDay()): Promise<DayData> {
   const [toggles, tasks, food, weights, workouts] = await Promise.all([
     sql<{ habit_key: string; done: boolean; count: number }[]>`

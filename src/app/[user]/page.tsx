@@ -1,6 +1,13 @@
 import { notFound } from 'next/navigation'
 import { partnerOf, habitsFor, sectionsFor, nameOf, isUserId, USERS, type UserId } from '@/lib/habits'
-import { loadDay, progress, isDone, recentWorkoutNames, type DayData } from '@/lib/queries'
+import {
+  loadDay,
+  rollOverTasks,
+  progress,
+  isDone,
+  recentWorkoutNames,
+  type DayData,
+} from '@/lib/queries'
 import { toDay, formatDay } from '@/lib/day'
 import { HabitRow } from '@/components/rows'
 
@@ -75,6 +82,10 @@ export default async function TodayPage({ params }: { params: Promise<{ user: st
   const me = user
   const them = partnerOf(me)
   const day = toDay()
+
+  // Before the reads, so today's list already includes what was left over.
+  // There is no cron in this app; opening the page is what advances the day.
+  await Promise.all([rollOverTasks(me, day), rollOverTasks(them, day)])
 
   const [mine, theirs, workoutNames] = await Promise.all([
     loadDay(me, day),
