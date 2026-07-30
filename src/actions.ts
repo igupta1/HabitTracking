@@ -61,11 +61,16 @@ export async function setCounter(u: string, key: string, delta: number) {
   if (!h || h.kind !== 'counter') return
 
   const target = h.target ?? 1
+  // The clamp for a brand-new row needs no SQL at all. For the update, both
+  // bounds are cast explicitly: `least($1, $2)` over two bare parameters gives
+  // Postgres nothing to infer from, so it picks text and greatest(0, text)
+  // fails with "types integer and text cannot be matched".
+  const initial = Math.max(0, Math.min(target, delta))
   await sql`
     insert into toggles (user_id, habit_key, day, count)
-    values (${user}, ${key}, ${toDay()}, greatest(0, least(${target}, ${delta})))
+    values (${user}, ${key}, ${toDay()}, ${initial})
     on conflict (user_id, habit_key, day)
-      do update set count = greatest(0, least(${target}, toggles.count + ${delta})),
+      do update set count = greatest(0, least(${target}::int, toggles.count + ${delta}::int)),
                     updated_at = now()`
   refresh()
 }
