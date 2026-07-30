@@ -30,7 +30,7 @@ the text `'ishaan'` or `'saloni'`.
 ```
 schema.sql                5 tables, plain SQL, no ORM or migration tool
 src/lib/habits.ts         the two goal sets, as a constant
-src/lib/day.ts            day boundaries (both users are America/Los_Angeles)
+src/lib/day.ts            day boundaries (America/Los_Angeles, flips at 4am)
 src/lib/queries.ts        reads
 src/actions.ts            writes (server actions — no REST API, no client store)
 src/components/rows.tsx   one component per habit kind
