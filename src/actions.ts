@@ -139,29 +139,41 @@ export async function addTask(
 
 /**
  * Commit a drag. The client sends the whole day's list in its new order, with
- * the category each task ended up under — for Ishaan the groups are part of the
- * list, so dragging a task into another group is how you recategorise it.
+ * the category and priority each task ended up under — for Ishaan the groups
+ * are part of the list, so dragging a task into another group is how you
+ * recategorise it, and dragging it under another P heading is how you
+ * repriorotise it.
  *
  * Rewriting every row is fine at this size and needs no ownership check beyond
  * the where clause: ids belonging to anyone else, or to another day, match
  * nothing. Positions are respaced by 1000 on every drop, so they never drift.
  */
-export async function reorderTasks(u: string, ids: string[], categories: (string | null)[]) {
+export async function reorderTasks(
+  u: string,
+  ids: string[],
+  categories: (string | null)[],
+  priorities: (number | null)[]
+) {
   const user = check(u)
   if (ids.length === 0 || ids.length !== categories.length) return
+  if (ids.length !== priorities.length) return
   // The cast below is to uuid[], so anything malformed would be an error rather
   // than a miss.
   if (!ids.every((id) => UUID.test(id))) return
 
   const cats = habit(user, 'tasks')?.categories
   const clean = categories.map((c) => (cats && c && cats.includes(c) ? c : null))
+  const pris = priorities.map((p) =>
+    cats && p && p >= 1 && p <= 3 ? Math.round(p) : null
+  )
   const orders = ids.map((_, i) => (i + 1) * 1000)
 
   await sql`
     update tasks t
-    set sort_order = u.ord, category = u.cat
-    from unnest(${ids}::uuid[], ${orders}::double precision[], ${clean}::text[])
-      as u(id, ord, cat)
+    set sort_order = u.ord, category = u.cat, priority = u.pri
+    from unnest(${ids}::uuid[], ${orders}::double precision[], ${clean}::text[],
+                ${pris}::int[])
+      as u(id, ord, cat, pri)
     where t.id = u.id and t.user_id = ${user} and t.day = ${toDay()}`
   refresh()
 }

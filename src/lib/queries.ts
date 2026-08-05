@@ -85,8 +85,9 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
     sql<{ habit_key: string; done: boolean; count: number }[]>`
       select habit_key, done, count from toggles
       where user_id = ${user} and day = ${day}`,
-    // Hand-picked order only. Nothing re-sorts under you — not priority, and
-    // not ticking a task off, which leaves it exactly where you put it.
+    // Hand-picked order within a segment; the client groups by category and
+    // then priority (see groupTasks), which is the only sort that happens on
+    // its own. Ticking a task off leaves it exactly where you put it.
     sql<TaskRow[]>`
       select id, title, done, category, priority from tasks
       where user_id = ${user} and day = ${day}

@@ -189,29 +189,51 @@ function TaskTitle({ user, task }: { user: UserId; task: TaskRow }) {
 }
 
 /**
- * The list as it is drawn: one flat group for Saloni, one per category plus a
- * trailing "Other" (anything predating categories) for Ishaan. Empty groups are
- * hidden until a drag is in progress, when each one becomes a drop target — that
- * is the only way to move a task into a category nothing is in yet.
+ * The list as it is drawn: one flat group for Saloni, and for Ishaan one per
+ * category — plus a trailing "Other" for anything predating categories — split
+ * again by priority, P1 first. Priority sorts itself; the hand-picked order
+ * only ever applies inside one segment. Empty segments are hidden until a drag
+ * is in progress, when each one becomes a drop target — that is the only way to
+ * move a task into a segment nothing is in yet.
  */
-type Group = { label: string; category: string | null; items: TaskRow[] }
+type Group = {
+  key: string
+  label: string
+  category: string | null
+  priority: number | null
+  items: TaskRow[]
+}
+
+const PRIORITIES = [1, 2, 3]
+
+/** Rows written before priorities existed read as P2, which is what the row shows. */
+function priorityOf(t: TaskRow): number {
+  return t.priority ?? 2
+}
 
 function groupTasks(tasks: TaskRow[], cats: string[] | undefined, keepEmpty = false): Group[] {
-  if (!cats) return [{ label: '', category: null, items: tasks }]
-  const groups: Group[] = [
-    ...cats.map((c) => ({ label: c, category: c, items: tasks.filter((t) => t.category === c) })),
-    {
-      label: 'Other',
-      category: null,
-      items: tasks.filter((t) => !t.category || !cats.includes(t.category)),
-    },
-  ]
+  if (!cats) return [{ key: '', label: '', category: null, priority: null, items: tasks }]
+  const groups: Group[] = []
+  for (const c of [...cats, null]) {
+    const inCat = tasks.filter((t) =>
+      c === null ? !t.category || !cats.includes(t.category) : t.category === c
+    )
+    for (const p of PRIORITIES) {
+      groups.push({
+        key: `${c ?? ''}:${p}`,
+        label: c ?? 'Other',
+        category: c,
+        priority: p,
+        items: inCat.filter((t) => priorityOf(t) === p),
+      })
+    }
+  }
   return keepEmpty ? groups : groups.filter((g) => g.items.length > 0)
 }
 
 /** Order and grouping together, which is what a drop has to be compared against. */
 function shape(tasks: TaskRow[]): string {
-  return tasks.map((t) => `${t.id}:${t.category ?? ''}`).join('|')
+  return tasks.map((t) => `${t.id}:${t.category ?? ''}:${t.priority ?? ''}`).join('|')
 }
 
 /**
@@ -269,9 +291,10 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
   const doneCount = items.filter((t) => t.done).length
 
   /**
-   * Put `id` where the finger is. Position and category are read off the same
-   * y independently — how many rows it has passed, and which group heading it
+   * Put `id` where the finger is. Position and segment are read off the same y
+   * independently — how many rows it has passed, and which segment heading it
    * is below — which agree because both only ever grow as you drag downwards.
+   * Landing in a segment is what sets the task's category and priority.
    */
   function dragTo(id: string, y: number) {
     const rest = items.filter((t) => t.id !== id)
@@ -280,17 +303,20 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
       return !!r && y > r.top + r.height / 2
     }).length
 
-    let category = groups[0]?.category ?? null
+    let target = groups[0]
     for (const g of groups) {
-      const r = heads.current.get(g.label)?.getBoundingClientRect()
-      if (r && y > r.top) category = g.category
+      const r = heads.current.get(g.key)?.getBoundingClientRect()
+      if (r && y > r.top) target = g
     }
 
     setItems((prev) => {
       const moved = prev.find((t) => t.id === id)
       if (!moved) return prev
+      const landed = cats
+        ? { ...moved, category: target?.category ?? null, priority: target?.priority ?? null }
+        : moved
       const others = prev.filter((t) => t.id !== id)
-      const next = [...others.slice(0, to), { ...moved, category }, ...others.slice(to)]
+      const next = [...others.slice(0, to), landed, ...others.slice(to)]
       return shape(next) === shape(prev) ? prev : next
     })
   }
@@ -298,16 +324,28 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
   /** Only writes when the drag actually changed something. */
   function commit(list: TaskRow[]) {
     if (shape(list) === fromServer) return
-    start(() => reorderTasks(user, list.map((t) => t.id), list.map((t) => t.category)))
+    start(() =>
+      reorderTasks(
+        user,
+        list.map((t) => t.id),
+        list.map((t) => t.category),
+        list.map((t) => t.priority)
+      )
+    )
   }
 
+  /** Arrow keys step through the flat list, taking the neighbour's segment with them. */
   function nudge(id: string, delta: number) {
     const from = items.findIndex((t) => t.id === id)
     const to = from + delta
     if (from < 0 || to < 0 || to >= items.length) return
     const next = [...items]
     const [moved] = next.splice(from, 1)
-    next.splice(to, 0, { ...moved, category: items[to].category })
+    next.splice(to, 0, {
+      ...moved,
+      category: items[to].category,
+      priority: cats ? priorityOf(items[to]) : moved.priority,
+    })
     setItems(next)
     commit(next)
   }
@@ -333,18 +371,32 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         drops the pointer capture and kills the drag halfway through.
       */}
       <div className="mt-1">
-        {groups.flatMap((g) => [
-          ...(g.label
+        {groups.flatMap((g, i) => [
+          // The category heading, once per run of its segments.
+          ...(g.label && g.category !== groups[i - 1]?.category
             ? [
                 <p
-                  key={`head:${g.label}`}
-                  ref={(el) => {
-                    if (el) heads.current.set(g.label, el)
-                    else heads.current.delete(g.label)
-                  }}
+                  key={`cat:${g.key}`}
                   className="pl-12 pr-4 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-600"
                 >
                   {g.label}
+                </p>,
+              ]
+            : []),
+          // The segment heading, which is also the target dragTo measures
+          // against. Empty ones only exist mid-drag (see groupTasks), so this
+          // adds no heading at rest that isn't standing over real rows.
+          ...(g.priority !== null
+            ? [
+                <p
+                  key={`seg:${g.key}`}
+                  ref={(el) => {
+                    if (el) heads.current.set(g.key, el)
+                    else heads.current.delete(g.key)
+                  }}
+                  className="pl-12 pr-4 pt-1 text-[10px] tabular-nums text-neutral-700"
+                >
+                  P{g.priority}
                 </p>,
               ]
             : []),
