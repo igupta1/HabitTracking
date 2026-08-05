@@ -28,30 +28,69 @@ export type DayData = {
 }
 
 /**
+ * `tasks.sort_order` arrived after the app was already deployed, and the only
+ * way to reach the hosted database is a SQL console. Rather than make a schema
+ * edit a manual step, the same two idempotent statements from schema.sql run
+ * once per server process, before the first task read.
+ */
+let migrated: Promise<void> | undefined
+function ensureSortOrder(): Promise<void> {
+  migrated ??= (async () => {
+    await sql`alter table tasks add column if not exists sort_order double precision`
+    await sql`
+      update tasks t set sort_order = s.n * 1000
+      from (select id, row_number() over (partition by user_id, day
+                                          order by done, priority nulls last, created_at) as n
+            from tasks) s
+      where t.id = s.id and t.sort_order is null`
+  })().catch((e) => {
+    migrated = undefined // a cold-start timeout shouldn't poison every later load
+    throw e
+  })
+  return migrated
+}
+
+/**
  * Unfinished tasks follow you forward: anything still open from an earlier day
  * is moved onto `day` the first time someone loads the page. Moving the row
  * rather than copying it keeps one task with one id — you can't finish
  * yesterday's copy and still be staring at today's.
  *
- * Only ever called for today. `created_at` is untouched, so carried tasks sort
- * above ones added today, and a task left open for a week keeps arriving until
- * it's done or ✕'d.
+ * Only ever called for today. Carried tasks keep their order relative to each
+ * other and land as a block above whatever today already holds, so a task left
+ * open for a week keeps arriving at the top until it's done or ✕'d.
  */
 export async function rollOverTasks(user: UserId, day: string = toDay()): Promise<void> {
+  await ensureSortOrder()
   await sql`
-    update tasks set day = ${day}
-    where user_id = ${user} and day < ${day} and not done`
+    with carried as (
+      select id, row_number() over (order by sort_order nulls last, created_at) as n
+      from tasks where user_id = ${user} and day < ${day} and not done
+    ),
+    today as (
+      select coalesce(min(sort_order), 0) as floor, (select count(*) from carried) as n
+      from tasks where user_id = ${user} and day = ${day}
+    )
+    update tasks t
+    set day = ${day},
+        -- n + 1 so the last carried row still lands below today's first, not on it
+        sort_order = (select floor - (n + 1) * 1000 from today) + c.n * 1000
+    from carried c
+    where t.id = c.id`
 }
 
 export async function loadDay(user: UserId, day: string = toDay()): Promise<DayData> {
+  await ensureSortOrder() // a no-op after the first call; see above
   const [toggles, tasks, food, weights, workouts] = await Promise.all([
     sql<{ habit_key: string; done: boolean; count: number }[]>`
       select habit_key, done, count from toggles
       where user_id = ${user} and day = ${day}`,
+    // Hand-picked order only. Nothing re-sorts under you — not priority, and
+    // not ticking a task off, which leaves it exactly where you put it.
     sql<TaskRow[]>`
       select id, title, done, category, priority from tasks
       where user_id = ${user} and day = ${day}
-      order by done, priority nulls last, created_at`,
+      order by sort_order nulls last, created_at`,
     sql<FoodRow[]>`
       select id, text, calories from food
       where user_id = ${user} and day = ${day} order by created_at`,

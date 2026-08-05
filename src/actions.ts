@@ -25,6 +25,8 @@ function refresh() {
 
 type OwnedTable = 'tasks' | 'food' | 'workouts'
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /** Every by-id mutation goes through this so one user can't touch the other's rows. */
 async function ownsRow(table: OwnedTable, id: string, user: UserId) {
   const rows = await sql<{ id: string }[]>`
@@ -126,10 +128,41 @@ export async function addTask(
   const cat = cats && category && cats.includes(category) ? category : null
   const pri = cats && priority && priority >= 1 && priority <= 3 ? Math.round(priority) : null
 
+  // New tasks land at the bottom of the hand-picked order.
   await sql`
-    insert into tasks (user_id, day, title, category, priority)
-    values (${user}, ${toDay()}, ${t}, ${cat}, ${pri})`
+    insert into tasks (user_id, day, title, category, priority, sort_order)
+    select ${user}, ${toDay()}, ${t}, ${cat}, ${pri}, coalesce(max(sort_order), 0) + 1000
+    from tasks where user_id = ${user} and day = ${toDay()}`
   await clearOverride(user, 'tasks')
+  refresh()
+}
+
+/**
+ * Commit a drag. The client sends the whole day's list in its new order, with
+ * the category each task ended up under — for Ishaan the groups are part of the
+ * list, so dragging a task into another group is how you recategorise it.
+ *
+ * Rewriting every row is fine at this size and needs no ownership check beyond
+ * the where clause: ids belonging to anyone else, or to another day, match
+ * nothing. Positions are respaced by 1000 on every drop, so they never drift.
+ */
+export async function reorderTasks(u: string, ids: string[], categories: (string | null)[]) {
+  const user = check(u)
+  if (ids.length === 0 || ids.length !== categories.length) return
+  // The cast below is to uuid[], so anything malformed would be an error rather
+  // than a miss.
+  if (!ids.every((id) => UUID.test(id))) return
+
+  const cats = habit(user, 'tasks')?.categories
+  const clean = categories.map((c) => (cats && c && cats.includes(c) ? c : null))
+  const orders = ids.map((_, i) => (i + 1) * 1000)
+
+  await sql`
+    update tasks t
+    set sort_order = u.ord, category = u.cat
+    from unnest(${ids}::uuid[], ${orders}::double precision[], ${clean}::text[])
+      as u(id, ord, cat)
+    where t.id = u.id and t.user_id = ${user} and t.day = ${toDay()}`
   refresh()
 }
 

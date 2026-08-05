@@ -47,14 +47,22 @@ Adding or changing a habit means editing `src/lib/habits.ts` and pushing.
 Per-person differences all live in that config:
 
 - **Task categories** — Ishaan's `tasks` habit sets `categories: ['SWE',
-  'Project', 'Misc']`, so his list groups under those headers in that order,
-  P1 first within each. Saloni's has no `categories`, so hers is a flat list
-  with no priorities. Give her some by adding the field.
+  'Project', 'Misc']`, so his list groups under those headers in that order.
+  Saloni's has no `categories`, so hers is a flat list with no priorities. Give
+  her some by adding the field.
 - **Calories** — only shown on Saloni's food log (`calories: true`).
 
 Tasks that predate categories, or whose category was removed from the config,
-collect under a trailing "Other" heading rather than disappearing. Crossed-off
-tasks sink to the bottom of their category.
+collect under a trailing "Other" heading rather than disappearing.
+
+**Tasks are ordered by hand.** Drag a row by its ⠿ grip (or focus the grip and
+press ↑/↓) to put it anywhere in the box; new tasks land at the bottom. Nothing
+else ever re-sorts the list — not priority, and not ticking something off, which
+leaves it exactly where you put it. On Ishaan's list the category headings are
+part of the same drag surface, so dropping a task under a different heading is
+how you recategorise it; empty categories appear as drop targets for as long as
+a drag is in progress. The order lives in `tasks.sort_order`, spaced by 1000 and
+rewritten for the whole day on every drop.
 
 The **Tasks** habit counts as done once every **P1** is done, even with P2/P3
 left over — clearing the must-dos is the bar. With no P1s on the list (always
@@ -63,8 +71,8 @@ done.
 
 **Unfinished tasks roll over.** Opening the page moves any task still open from
 an earlier day onto today — the row moves rather than being copied, so it stays
-one task with one id, and it keeps its original `created_at` so carried tasks
-sort above ones added today. There's no cron: loading the page is what advances
+one task with one id, and it arrives as a block above whatever today already
+holds, keeping the order you gave it. There's no cron: loading the page is what advances
 the day, so a week away rolls everything forward at once. Finish it or ✕ it to
 make it stop coming back. Everything else (checks, food, weight, workouts) is
 per-day and starts empty.
@@ -99,6 +107,12 @@ Schema changes: edit `schema.sql`, re-run `npm run db:init` (which is just
 `create ... if not exists`, so re-running is safe — but changing an *existing*
 column still means writing the `alter table` yourself. Against Neon, paste
 `schema.sql` into their SQL editor instead.
+
+`tasks.sort_order` is the exception: it was added after the app was deployed, so
+`src/lib/queries.ts` runs the same idempotent `alter table` and backfill once per
+server process, before the first task read. That is there so a push goes live on
+its own; it isn't a migration system, and the next column shouldn't grow one
+without a reason.
 
 ## Deploying to Vercel
 

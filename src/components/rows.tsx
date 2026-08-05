@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import {
   toggleCheck,
   setCounter,
   addTask,
   setTaskPriority,
   renameTask,
+  reorderTasks,
   toggleTask,
   addFood,
   updateFood,
@@ -187,25 +188,119 @@ function TaskTitle({ user, task }: { user: UserId; task: TaskRow }) {
   )
 }
 
+/**
+ * The list as it is drawn: one flat group for Saloni, one per category plus a
+ * trailing "Other" (anything predating categories) for Ishaan. Empty groups are
+ * hidden until a drag is in progress, when each one becomes a drop target — that
+ * is the only way to move a task into a category nothing is in yet.
+ */
+type Group = { label: string; category: string | null; items: TaskRow[] }
+
+function groupTasks(tasks: TaskRow[], cats: string[] | undefined, keepEmpty = false): Group[] {
+  if (!cats) return [{ label: '', category: null, items: tasks }]
+  const groups: Group[] = [
+    ...cats.map((c) => ({ label: c, category: c, items: tasks.filter((t) => t.category === c) })),
+    {
+      label: 'Other',
+      category: null,
+      items: tasks.filter((t) => !t.category || !cats.includes(t.category)),
+    },
+  ]
+  return keepEmpty ? groups : groups.filter((g) => g.items.length > 0)
+}
+
+/** Order and grouping together, which is what a drop has to be compared against. */
+function shape(tasks: TaskRow[]): string {
+  return tasks.map((t) => `${t.id}:${t.category ?? ''}`).join('|')
+}
+
+/**
+ * The drag handle. Pointer events rather than HTML5 drag-and-drop, which never
+ * fires on touch; `touch-none` stops the browser scrolling the page instead of
+ * giving us the move. Arrow keys do the same job from the keyboard.
+ */
+function Grip(props: React.ComponentProps<'button'>) {
+  return (
+    <button
+      type="button"
+      aria-label="Reorder task"
+      className="w-5 shrink-0 cursor-grab touch-none select-none text-left text-lg leading-none text-neutral-600 active:cursor-grabbing"
+      {...props}
+    >
+      ⠿
+    </button>
+  )
+}
+
 function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]; done: boolean }) {
   const cats = habit.categories
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState(cats?.[0] ?? '')
   const [priority, setPriority] = useState(2)
   const [pending, start] = useTransition()
-  const doneCount = tasks.filter((t) => t.done).length
 
-  // Tasks arrive sorted by priority then created_at, so grouping preserves that.
-  // The trailing "Other" group catches anything predating categories.
-  const groups = cats
-    ? [
-        ...cats.map((c) => ({ label: c, items: tasks.filter((t) => t.category === c) })),
-        {
-          label: 'Other',
-          items: tasks.filter((t) => !t.category || !cats.includes(t.category)),
-        },
-      ].filter((g) => g.items.length > 0)
-    : [{ label: '', items: tasks }]
+  // The list is held locally while you drag so it reorders under your finger
+  // instead of after a round trip, then re-synced whenever the server's copy
+  // differs. Storing it already grouped keeps a flat index unambiguous: it is
+  // both a position and, via the group it falls in, a category.
+  const flatten = (ts: TaskRow[]) => groupTasks(ts, cats).flatMap((g) => g.items)
+  const [items, setItems] = useState(() => flatten(tasks))
+  const fromServer = shape(flatten(tasks))
+  useEffect(() => setItems(flatten(tasks)), [fromServer]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [dragId, setDragId] = useState<string | null>(null)
+  const rows = useRef(new Map<string, HTMLElement>())
+  const heads = useRef(new Map<string, HTMLElement>())
+  // What to save on drop, read from a ref so it can't be a render behind.
+  const latest = useRef(items)
+  latest.current = items
+
+  const groups = groupTasks(items, cats, dragId !== null)
+  const doneCount = items.filter((t) => t.done).length
+
+  /**
+   * Put `id` where the finger is. Position and category are read off the same
+   * y independently — how many rows it has passed, and which group heading it
+   * is below — which agree because both only ever grow as you drag downwards.
+   */
+  function dragTo(id: string, y: number) {
+    const rest = items.filter((t) => t.id !== id)
+    const to = rest.filter((t) => {
+      const r = rows.current.get(t.id)?.getBoundingClientRect()
+      return !!r && y > r.top + r.height / 2
+    }).length
+
+    let category = groups[0]?.category ?? null
+    for (const g of groups) {
+      const r = heads.current.get(g.label)?.getBoundingClientRect()
+      if (r && y > r.top) category = g.category
+    }
+
+    setItems((prev) => {
+      const moved = prev.find((t) => t.id === id)
+      if (!moved) return prev
+      const others = prev.filter((t) => t.id !== id)
+      const next = [...others.slice(0, to), { ...moved, category }, ...others.slice(to)]
+      return shape(next) === shape(prev) ? prev : next
+    })
+  }
+
+  /** Only writes when the drag actually changed something. */
+  function commit(list: TaskRow[]) {
+    if (shape(list) === fromServer) return
+    start(() => reorderTasks(user, list.map((t) => t.id), list.map((t) => t.category)))
+  }
+
+  function nudge(id: string, delta: number) {
+    const from = items.findIndex((t) => t.id === id)
+    const to = from + delta
+    if (from < 0 || to < 0 || to >= items.length) return
+    const next = [...items]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, { ...moved, category: items[to].category })
+    setItems(next)
+    commit(next)
+  }
 
   return (
     <div className={pending ? 'opacity-50' : ''}>
@@ -213,7 +308,7 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
         <span className="tabular-nums text-sm text-neutral-400">
-          {doneCount}/{tasks.length}
+          {doneCount}/{items.length}
         </span>
       </div>
 
@@ -221,55 +316,99 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         <p className="px-4 pb-3 pl-12 text-sm text-neutral-500">Nothing planned yet today.</p>
       )}
 
+      {/*
+        Headings and rows are siblings in one list rather than a div per group,
+        so a row dragged into another category is *moved* by React. Nested in
+        per-group elements it would be unmounted and remounted instead, which
+        drops the pointer capture and kills the drag halfway through.
+      */}
       <div className="mt-1">
-        {groups.map((g) => (
-          <div key={g.label}>
-            {g.label && (
-              <p className="pl-12 pr-4 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-600">
-                {g.label}
-              </p>
-            )}
-            {g.items.map((t) => (
-              <div key={t.id} className="flex items-center gap-2 py-1.5 pl-12 pr-4">
-                {readOnly ? (
-                  <div className="flex flex-1 items-center gap-3">
+        {groups.flatMap((g) => [
+          ...(g.label
+            ? [
+                <p
+                  key={`head:${g.label}`}
+                  ref={(el) => {
+                    if (el) heads.current.set(g.label, el)
+                    else heads.current.delete(g.label)
+                  }}
+                  className="pl-12 pr-4 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-600"
+                >
+                  {g.label}
+                </p>,
+              ]
+            : []),
+          ...g.items.map((t) => (
+            <div
+              key={t.id}
+              ref={(el) => {
+                if (el) rows.current.set(t.id, el)
+                else rows.current.delete(t.id)
+              }}
+              className={`flex items-center gap-2 py-1.5 pr-4 ${
+                readOnly ? 'pl-12' : 'pl-5'
+              } ${dragId === t.id ? 'rounded-lg bg-neutral-800' : ''}`}
+            >
+              {readOnly ? (
+                <div className="flex flex-1 items-center gap-3">
+                  <Check on={t.done} />
+                  <span className={taskTone(t)}>{t.title}</span>
+                </div>
+              ) : (
+                <>
+                  <Grip
+                    onPointerDown={(e) => {
+                      e.preventDefault() // or the browser starts a text selection
+                      e.currentTarget.setPointerCapture(e.pointerId)
+                      setDragId(t.id)
+                    }}
+                    onPointerMove={(e) => dragId === t.id && dragTo(t.id, e.clientY)}
+                    onPointerUp={() => {
+                      setDragId(null)
+                      commit(latest.current)
+                    }}
+                    onPointerCancel={() => {
+                      setDragId(null)
+                      setItems(flatten(tasks))
+                    }}
+                    onKeyDown={(e) => {
+                      const d = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
+                      if (!d) return
+                      e.preventDefault()
+                      nudge(t.id, d)
+                    }}
+                  />
+                  <button
+                    onClick={() => start(() => toggleTask(user, t.id))}
+                    className="tap shrink-0"
+                    aria-label={`Mark ${t.title} ${t.done ? 'not done' : 'done'}`}
+                  >
                     <Check on={t.done} />
-                    <span className={taskTone(t)}>{t.title}</span>
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => start(() => toggleTask(user, t.id))}
-                      className="tap shrink-0"
-                      aria-label={`Mark ${t.title} ${t.done ? 'not done' : 'done'}`}
+                  </button>
+                  <TaskTitle key={t.title} user={user} task={t} />
+                </>
+              )}
+              {cats &&
+                (readOnly ? (
+                  t.priority && (
+                    <span
+                      className={`text-xs tabular-nums ${
+                        t.priority === 1 ? 'text-red-400' : 'text-neutral-500'
+                      }`}
                     >
-                      <Check on={t.done} />
-                    </button>
-                    <TaskTitle key={t.title} user={user} task={t} />
-                  </>
-                )}
-                {cats &&
-                  (readOnly ? (
-                    t.priority && (
-                      <span
-                        className={`text-xs tabular-nums ${
-                          t.priority === 1 ? 'text-red-400' : 'text-neutral-500'
-                        }`}
-                      >
-                        P{t.priority}
-                      </span>
-                    )
-                  ) : (
-                    <Priority
-                      value={t.priority ?? 2}
-                      onChange={(v) => start(() => setTaskPriority(user, t.id, v))}
-                    />
-                  ))}
-                {!readOnly && <X onClick={() => start(() => deleteRow(user, 'tasks', t.id))} />}
-              </div>
-            ))}
-          </div>
-        ))}
+                      P{t.priority}
+                    </span>
+                  )
+                ) : (
+                  <Priority
+                    value={t.priority ?? 2}
+                    onChange={(v) => start(() => setTaskPriority(user, t.id, v))}
+                  />
+                ))}
+              {!readOnly && <X onClick={() => start(() => deleteRow(user, 'tasks', t.id))} />}
+            </div>
+          )),
+        ])}
       </div>
 
       {!readOnly && (
