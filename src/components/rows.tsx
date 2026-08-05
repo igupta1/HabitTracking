@@ -215,6 +215,16 @@ function shape(tasks: TaskRow[]): string {
 }
 
 /**
+ * Everything the rows render, which is what the local copy has to be resynced
+ * against. Order alone is not enough: ticking a task off or changing its
+ * priority leaves the order untouched, and watching only `shape` left those
+ * changes stuck on the server until a reload.
+ */
+function stamp(tasks: TaskRow[]): string {
+  return tasks.map((t) => `${t.id}:${t.category ?? ''}:${t.priority ?? ''}:${+t.done}:${t.title}`).join('|')
+}
+
+/**
  * The drag handle. Pointer events rather than HTML5 drag-and-drop, which never
  * fires on touch; `touch-none` stops the browser scrolling the page instead of
  * giving us the move. Arrow keys do the same job from the keyboard.
@@ -246,7 +256,7 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
   const flatten = (ts: TaskRow[]) => groupTasks(ts, cats).flatMap((g) => g.items)
   const [items, setItems] = useState(() => flatten(tasks))
   const fromServer = shape(flatten(tasks))
-  useEffect(() => setItems(flatten(tasks)), [fromServer]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => setItems(flatten(tasks)), [stamp(tasks)]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [dragId, setDragId] = useState<string | null>(null)
   const rows = useRef(new Map<string, HTMLElement>())
