@@ -208,14 +208,19 @@ export async function toggleTask(u: string, id: string) {
 
 // ---------------------------------------------------------------- food
 
-export async function addFood(u: string, text: string, calories?: number | null) {
+export async function addFood(
+  u: string,
+  text: string,
+  calories?: number | null,
+  proteinG?: number | null
+) {
   const user = check(u)
   const t = text.trim()
   if (!t) return
 
   await sql`
-    insert into food (user_id, day, text, calories)
-    values (${user}, ${toDay()}, ${t}, ${cleanCalories(calories)})`
+    insert into food (user_id, day, text, calories, protein_g)
+    values (${user}, ${toDay()}, ${t}, ${amount(calories)}, ${amount(proteinG)})`
   await clearOverride(user, 'food')
   refresh()
 }
@@ -224,7 +229,8 @@ export async function updateFood(
   u: string,
   id: string,
   text: string,
-  calories?: number | null
+  calories?: number | null,
+  proteinG?: number | null
 ) {
   const user = check(u)
   if (!(await ownsRow('food', id, user))) return
@@ -235,14 +241,16 @@ export async function updateFood(
     await sql`delete from food where id = ${id}`
   } else {
     await sql`
-      update food set text = ${t}, calories = ${cleanCalories(calories)}
+      update food
+      set text = ${t}, calories = ${amount(calories)}, protein_g = ${amount(proteinG)}
       where id = ${id}`
   }
   refresh()
 }
 
-function cleanCalories(c?: number | null): number | null {
-  return c && c > 0 ? Math.round(c) : null
+/** Calories and protein alike: a whole number, or nothing at all. */
+function amount(n?: number | null): number | null {
+  return n && n > 0 ? Math.round(n) : null
 }
 
 // ---------------------------------------------------------------- weight

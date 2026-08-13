@@ -47,9 +47,14 @@ create table if not exists food (
   day        date not null,
   text       text not null,
   calories   int,                             -- only shown for Saloni
+  protein_g  int,                             -- likewise, in grams
   created_at timestamptz not null default now()
 );
 create index if not exists food_user_day on food (user_id, day);
+
+-- Added after the first deploy, like tasks.sort_order above; src/lib/queries.ts
+-- runs it once per process so a fresh push doesn't need a SQL console.
+alter table food add column if not exists protein_g int;
 
 create table if not exists weights (
   user_id text not null,

@@ -523,20 +523,24 @@ function FoodEntry({
   user,
   entry,
   showCalories,
+  showProtein,
 }: {
   user: UserId
   entry: FoodRow
   showCalories?: boolean
+  showProtein?: boolean
 }) {
   const [text, setText] = useState(entry.text)
   const [cal, setCal] = useState(entry.calories != null ? String(entry.calories) : '')
+  const [pro, setPro] = useState(entry.protein_g != null ? String(entry.protein_g) : '')
   const [pending, start] = useTransition()
 
   function save() {
     const t = text.trim()
     const c = cal ? Number(cal) : null
-    if (t === entry.text && c === entry.calories) return
-    start(() => updateFood(user, entry.id, t, c))
+    const p = pro ? Number(pro) : null
+    if (t === entry.text && c === entry.calories && p === entry.protein_g) return
+    start(() => updateFood(user, entry.id, t, c, p))
   }
 
   return (
@@ -559,6 +563,17 @@ function FoodEntry({
           className="input-sm py-1 text-sm"
         />
       )}
+      {showProtein && (
+        <input
+          value={pro}
+          onChange={(e) => setPro(e.target.value)}
+          onBlur={save}
+          onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+          inputMode="numeric"
+          placeholder="g"
+          className="input-sm py-1 text-sm"
+        />
+      )}
       <X onClick={() => start(() => deleteRow(user, 'food', entry.id))} />
     </div>
   )
@@ -573,7 +588,14 @@ function FoodRowGroup({
 }: P & { entries: FoodRow[]; done: boolean }) {
   const [text, setText] = useState('')
   const [cal, setCal] = useState('')
+  const [pro, setPro] = useState('')
   const [pending, start] = useTransition()
+
+  // One line per tracked amount, so a day adds up to "1800 cal · 120 g protein".
+  const totals = [
+    habit.calories ? `${entries.reduce((s, e) => s + (e.calories ?? 0), 0)} cal` : null,
+    habit.protein ? `${entries.reduce((s, e) => s + (e.protein_g ?? 0), 0)} g protein` : null,
+  ].filter(Boolean)
 
   return (
     <div className={pending ? 'opacity-50' : ''}>
@@ -588,19 +610,26 @@ function FoodRowGroup({
             <div key={e.id} className="py-1.5 pl-12 pr-4 text-sm">
               {e.text}
               {e.calories != null && <span className="ml-2 text-neutral-500">{e.calories} cal</span>}
+              {e.protein_g != null && (
+                <span className="ml-2 text-neutral-500">{e.protein_g} g</span>
+              )}
             </div>
           ) : (
-            <FoodEntry key={e.id} user={user} entry={e} showCalories={habit.calories} />
+            <FoodEntry
+              key={e.id}
+              user={user}
+              entry={e}
+              showCalories={habit.calories}
+              showProtein={habit.protein}
+            />
           )
         )}
       </div>
 
-      {habit.calories && entries.length > 0 && (
+      {totals.length > 0 && entries.length > 0 && (
         <div className="mt-1 flex items-center border-t border-neutral-800 py-2 pl-12 pr-4 text-sm">
           <span className="flex-1 text-neutral-400">Total</span>
-          <span className="tabular-nums font-medium">
-            {entries.reduce((s, e) => s + (e.calories ?? 0), 0)} cal
-          </span>
+          <span className="tabular-nums font-medium">{totals.join(' · ')}</span>
         </div>
       )}
 
@@ -611,9 +640,11 @@ function FoodRowGroup({
             const v = text.trim()
             if (!v) return
             const c = cal ? Number(cal) : null
+            const p = pro ? Number(pro) : null
             setText('')
             setCal('')
-            start(() => addFood(user, v, c))
+            setPro('')
+            start(() => addFood(user, v, c, p))
           }}
           className="flex gap-2 px-4 pb-3 pl-12 pt-1"
         >
@@ -629,6 +660,15 @@ function FoodRowGroup({
               onChange={(e) => setCal(e.target.value)}
               inputMode="numeric"
               placeholder="cal"
+              className="input-sm"
+            />
+          )}
+          {habit.protein && (
+            <input
+              value={pro}
+              onChange={(e) => setPro(e.target.value)}
+              inputMode="numeric"
+              placeholder="g"
               className="input-sm"
             />
           )}
@@ -830,7 +870,7 @@ function CardioRow({
             onChange={(e) => setName(e.target.value)}
             className="rounded-lg bg-neutral-800 px-2 py-2 outline-none"
           >
-            {['run', 'bike', 'sport', 'rest'].map((k) => (
+            {['run', 'walk', 'bike', 'sport', 'rest'].map((k) => (
               <option key={k} value={k}>
                 {k}
               </option>

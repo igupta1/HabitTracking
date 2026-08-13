@@ -9,7 +9,12 @@ export type TaskRow = {
   category: string | null
   priority: number | null
 }
-export type FoodRow = { id: string; text: string; calories: number | null }
+export type FoodRow = {
+  id: string
+  text: string
+  calories: number | null
+  protein_g: number | null
+}
 export type WorkoutRow = {
   id: string
   mode: 'strength' | 'cardio'
@@ -28,13 +33,13 @@ export type DayData = {
 }
 
 /**
- * `tasks.sort_order` arrived after the app was already deployed, and the only
- * way to reach the hosted database is a SQL console. Rather than make a schema
- * edit a manual step, the same two idempotent statements from schema.sql run
- * once per server process, before the first task read.
+ * `tasks.sort_order` and `food.protein_g` arrived after the app was already
+ * deployed, and the only way to reach the hosted database is a SQL console.
+ * Rather than make a schema edit a manual step, the same idempotent statements
+ * from schema.sql run once per server process, before the first read.
  */
 let migrated: Promise<void> | undefined
-function ensureSortOrder(): Promise<void> {
+function ensureColumns(): Promise<void> {
   migrated ??= (async () => {
     await sql`alter table tasks add column if not exists sort_order double precision`
     await sql`
@@ -43,6 +48,8 @@ function ensureSortOrder(): Promise<void> {
                                           order by done, priority nulls last, created_at) as n
             from tasks) s
       where t.id = s.id and t.sort_order is null`
+    // No backfill: entries logged before protein tracking simply have none.
+    await sql`alter table food add column if not exists protein_g int`
   })().catch((e) => {
     migrated = undefined // a cold-start timeout shouldn't poison every later load
     throw e
@@ -61,7 +68,7 @@ function ensureSortOrder(): Promise<void> {
  * open for a week keeps arriving at the top until it's done or ✕'d.
  */
 export async function rollOverTasks(user: UserId, day: string = toDay()): Promise<void> {
-  await ensureSortOrder()
+  await ensureColumns()
   await sql`
     with carried as (
       select id, row_number() over (order by sort_order nulls last, created_at) as n
@@ -80,7 +87,7 @@ export async function rollOverTasks(user: UserId, day: string = toDay()): Promis
 }
 
 export async function loadDay(user: UserId, day: string = toDay()): Promise<DayData> {
-  await ensureSortOrder() // a no-op after the first call; see above
+  await ensureColumns() // a no-op after the first call; see above
   const [toggles, tasks, food, weights, workouts] = await Promise.all([
     sql<{ habit_key: string; done: boolean; count: number }[]>`
       select habit_key, done, count from toggles
@@ -93,7 +100,7 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
       where user_id = ${user} and day = ${day}
       order by sort_order nulls last, created_at`,
     sql<FoodRow[]>`
-      select id, text, calories from food
+      select id, text, calories, protein_g from food
       where user_id = ${user} and day = ${day} order by created_at`,
     sql<{ lbs: number }[]>`
       select lbs from weights where user_id = ${user} and day = ${day}`,

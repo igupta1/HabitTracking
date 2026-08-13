@@ -34,6 +34,7 @@ export type HabitKind =
 
 export const SECTIONS = [
   'Career',
+  'Project',
   'Physique',
   'Cardio & Stretching',
   'Family/Partner',
@@ -50,6 +51,8 @@ export type Habit = {
   target?: number
   /** food only — whether to show the calorie field */
   calories?: boolean
+  /** food only — whether to show the protein field, in grams */
+  protein?: boolean
   /** tasks only — grouping headers, rendered in this order. Omit for a flat list. */
   categories?: string[]
 }
@@ -63,6 +66,8 @@ export const HABITS: Record<UserId, Habit[]> = {
       section: 'Career',
       categories: ['SWE', 'Project', 'Misc'],
     },
+
+    { key: 'review_gate', title: 'Review Gate', kind: 'toggle', section: 'Project' },
 
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
     { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique' },
@@ -84,7 +89,7 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'tasks', title: 'Tasks', kind: 'tasks', section: 'Career' },
 
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
-    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: true },
+    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: true, protein: true },
     { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Physique' },
 
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching' },
