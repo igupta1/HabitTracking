@@ -50,7 +50,9 @@ Per-person differences all live in that config:
   'Project', 'Misc']`, so his list groups under those headers in that order.
   Saloni's has no `categories`, so hers is a flat list with no priorities. Give
   her some by adding the field.
-- **Calories** — only shown on Saloni's food log (`calories: true`).
+- **Calories and protein** — only shown on Saloni's food log (`calories: true`,
+  `protein: true`). Either flag can stand on its own; the daily total row shows
+  whichever are on.
 
 Tasks that predate categories, or whose category was removed from the config,
 collect under a trailing "Other" heading rather than disappearing.
@@ -81,12 +83,13 @@ per-day and starts empty.
 than app logic. Delete the logged one to change it. Cardio is unrestricted.
 
 Food entries are always-editable inputs that save on blur — clearing the text
-deletes the entry. Saloni's log totals its calories in a row at the bottom.
+deletes the entry. Saloni's log totals its calories and protein in a row at the
+bottom.
 
 Every add form has an explicit `+` submit button, and needs one: a form with
 more than one blocking field and no submit button never implicitly submits on
-Enter. That silently made Saloni's two-field (text + calories) food log
-impossible to add to, while Ishaan's one-field version worked fine. Don't
+Enter. That silently made Saloni's multi-field (text + calories + protein) food
+log impossible to add to, while Ishaan's one-field version worked fine. Don't
 remove those buttons.
 
 ## Local setup
@@ -108,11 +111,12 @@ Schema changes: edit `schema.sql`, re-run `npm run db:init` (which is just
 column still means writing the `alter table` yourself. Against Neon, paste
 `schema.sql` into their SQL editor instead.
 
-`tasks.sort_order` is the exception: it was added after the app was deployed, so
-`src/lib/queries.ts` runs the same idempotent `alter table` and backfill once per
-server process, before the first task read. That is there so a push goes live on
-its own; it isn't a migration system, and the next column shouldn't grow one
-without a reason.
+`tasks.sort_order` and `food.protein_g` are the exceptions: both were added
+after the app was deployed, so `src/lib/queries.ts` runs the same idempotent
+`alter table` statements (and, for `sort_order`, a backfill) once per server
+process, before the first read. That is there so a push goes live on its own; it
+isn't a migration system, and the next column shouldn't grow one without a
+reason.
 
 ## Deploying to Vercel
 
