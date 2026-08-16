@@ -36,13 +36,43 @@ export function toDay(instant: Date = new Date()): string {
 }
 
 
+/**
+ * Noon UTC on a `YYYY-MM-DD`, which is what everything below reads. Noon rather
+ * than midnight so no formatter's own timezone can round it onto the day before.
+ */
+function noon(day: string): Date {
+  const [y, m, d] = day.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d, 12))
+}
+
+const LONG = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+})
+
+const SHORT = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  month: 'short',
+  day: 'numeric',
+})
+
 /** "Tue, Jul 29" for the day header. */
 export function formatDay(day: string): string {
-  const [y, m, d] = day.split('-').map(Number)
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(Date.UTC(y, m - 1, d, 12)))
+  return LONG.format(noon(day))
+}
+
+/** "Jul 29" — the weight chart, where the weekday is noise on every tick. */
+export function formatShortDay(day: string): string {
+  return SHORT.format(noon(day))
+}
+
+/**
+ * Days since the epoch. Lets a chart space its points by the gaps between them
+ * rather than by how many there are, so a week of not weighing in reads as a
+ * week.
+ */
+export function dayIndex(day: string): number {
+  return Math.round(noon(day).getTime() / 86_400_000)
 }

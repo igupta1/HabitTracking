@@ -6,7 +6,9 @@ import {
   progress,
   isDone,
   recentWorkoutNames,
+  weightHistory,
   type DayData,
+  type WeightPoint,
 } from '@/lib/queries'
 import { toDay, formatDay } from '@/lib/day'
 import { HabitRow } from '@/components/rows'
@@ -21,11 +23,13 @@ export const dynamic = 'force-dynamic'
 function Column({
   who,
   day,
+  weights,
   readOnly,
   names,
 }: {
   who: UserId
   day: DayData
+  weights: WeightPoint[]
   readOnly?: boolean
   names?: string[]
 }) {
@@ -65,6 +69,7 @@ function Column({
                     done={isDone(h, day)}
                     readOnly={readOnly}
                     names={names}
+                    weights={weights}
                   />
                 ))}
             </div>
@@ -87,10 +92,13 @@ export default async function TodayPage({ params }: { params: Promise<{ user: st
   // There is no cron in this app; opening the page is what advances the day.
   await Promise.all([rollOverTasks(me, day), rollOverTasks(them, day)])
 
-  const [mine, theirs, workoutNames] = await Promise.all([
+  const [mine, theirs, workoutNames, myWeights, theirWeights] = await Promise.all([
     loadDay(me, day),
     loadDay(them, day),
     recentWorkoutNames(me),
+    // Both columns, since the chart opens on either person's weight row.
+    weightHistory(me, day),
+    weightHistory(them, day),
   ])
 
   return (
@@ -101,8 +109,8 @@ export default async function TodayPage({ params }: { params: Promise<{ user: st
       </header>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <Column who={me} day={mine} names={workoutNames} />
-        <Column who={them} day={theirs} readOnly />
+        <Column who={me} day={mine} weights={myWeights} names={workoutNames} />
+        <Column who={them} day={theirs} weights={theirWeights} readOnly />
       </div>
     </main>
   )

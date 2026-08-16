@@ -28,13 +28,14 @@ Deliberately small. Two users, so there's no users table — `user_id` is just
 the text `'ishaan'` or `'saloni'`.
 
 ```
-schema.sql                5 tables, plain SQL, no ORM or migration tool
-src/lib/habits.ts         the two goal sets, as a constant
-src/lib/day.ts            day boundaries (America/Los_Angeles, flips at 4am)
-src/lib/queries.ts        reads
-src/actions.ts            writes (server actions — no REST API, no client store)
-src/components/rows.tsx   one component per habit kind
-src/app/[user]/page.tsx   the only real page: both columns
+schema.sql                       5 tables, plain SQL, no ORM or migration tool
+src/lib/habits.ts                the two goal sets, as a constant
+src/lib/day.ts                   day boundaries (America/LA, flips at 4am)
+src/lib/queries.ts               reads
+src/actions.ts                   writes (server actions — no REST API, no store)
+src/components/rows.tsx          one component per habit kind
+src/components/weight-chart.tsx  date vs lbs, the only chart in the app
+src/app/[user]/page.tsx          the only real page: both columns
 ```
 
 `rows.tsx` is shared between your column and theirs — a `readOnly` prop strips
@@ -85,6 +86,19 @@ than app logic. Delete the logged one to change it. Cardio is unrestricted.
 Food entries are always-editable inputs that save on blur — clearing the text
 deletes the entry. Saloni's log totals its calories and protein in a row at the
 bottom.
+
+**Body weight has a chart.** The small trend button on either person's weight
+row — yours or theirs — opens a line of date vs lbs for the last 90 days, drawn
+as plain SVG in `src/components/weight-chart.tsx` rather than by a chart
+library. Points are spaced by *date*, so a week of not weighing in reads as a
+week-long gap instead of one more step along the line, and the axis is not
+zero-based: pounds of empty chart under the line would flatten the only thing it
+is drawn to show. Pointing at it, or focusing it and pressing ←/→, reads out a
+single day. Each chart draws one person, in that person's colour, so nothing
+ever has to tell the two colours apart — they don't separate under deuteranopia.
+
+This is the only read in the app that looks past today: `weightHistory` in
+`src/lib/queries.ts`, whose `WEIGHT_WINDOW_DAYS` is the one number to change.
 
 Every add form has an explicit `+` submit button, and needs one: a form with
 more than one blocking field and no submit button never implicitly submits on
@@ -149,6 +163,7 @@ Cut to keep this small; add only if actually missed:
 - Streaks and weekly scores.
 - Any judgement about *when* you added a task. A task added at 4pm that you
   finish by midnight is just a task.
-- An activity feed / history page. The data is all there per-day; nothing reads
-  it beyond today.
+- An activity feed / history page. The data is all there per-day, and body
+  weight is the one thing with any past on screen — a chart on the row itself,
+  not a page.
 - Offline support. Logging with no signal fails rather than queuing.

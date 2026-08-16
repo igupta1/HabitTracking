@@ -169,6 +169,27 @@ export function progress(user: UserId, d: DayData): { done: number; total: numbe
 }
 
 
+export type WeightPoint = { day: string; lbs: number }
+
+/** How far back the chart behind the weight row reaches. */
+export const WEIGHT_WINDOW_DAYS = 90
+
+/**
+ * Body weight over the last WEIGHT_WINDOW_DAYS, oldest first — the whole of
+ * what the weight chart draws. The only read in the app that looks past today,
+ * so it's the only place `day` comes back out of the database: as text, to stay
+ * the same `YYYY-MM-DD` string everything else passes around.
+ */
+export async function weightHistory(
+  user: UserId,
+  day: string = toDay()
+): Promise<WeightPoint[]> {
+  return sql<WeightPoint[]>`
+    select to_char(day, 'YYYY-MM-DD') as day, lbs from weights
+    where user_id = ${user} and day > ${day}::date - ${WEIGHT_WINDOW_DAYS}::int
+    order by day`
+}
+
 /**
  * Strength workout names this user has typed before ("Push", "Pull", "Legs"),
  * most recent first — feeds the datalist so it's one tap after the first week.

@@ -16,8 +16,9 @@ import {
   logCardio,
   deleteRow,
 } from '@/actions'
-import type { DayData, TaskRow, FoodRow, WorkoutRow } from '@/lib/queries'
+import type { DayData, TaskRow, FoodRow, WorkoutRow, WeightPoint } from '@/lib/queries'
 import type { Habit, UserId } from '@/lib/habits'
+import { WeightChart } from './weight-chart'
 
 /**
  * One component per habit kind, shared between your own Today page and the
@@ -681,14 +682,34 @@ function FoodRowGroup({
 
 // ---------------------------------------------------------------- weight
 
+/** The chart button's glyph: drawn, so it sits at icon size next to the ✕ and ⠿. */
+function Trend() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M2 11.5 6 7l3 2.5L14 4" />
+    </svg>
+  )
+}
+
 function WeightRow({
   user,
   habit,
   readOnly,
   lbs,
+  history,
   done,
-}: P & { lbs: number | null; done: boolean }) {
+}: P & { lbs: number | null; history: WeightPoint[]; done: boolean }) {
   const [value, setValue] = useState(lbs != null ? String(lbs) : '')
+  const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
 
   function save() {
@@ -697,29 +718,44 @@ function WeightRow({
   }
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 ${pending ? 'opacity-50' : ''}`}>
-      <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
-      <Title>{habit.title}</Title>
-      {readOnly ? (
-        <span className="tabular-nums text-sm text-neutral-400">{lbs ?? '—'}</span>
-      ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            save()
-          }}
-        >
-          <input
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onBlur={save}
-            inputMode="decimal"
-            placeholder="—"
-            className="input w-20 text-right"
-          />
-        </form>
-      )}
-      <span className="text-sm text-neutral-500">lbs</span>
+    <div className={pending ? 'opacity-50' : ''}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
+        <Title>{habit.title}</Title>
+        {/* Nothing weighed in yet is nothing to plot, so the button waits. */}
+        {history.length > 0 && (
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            aria-label={`${open ? 'Hide' : 'Show'} weight chart`}
+            className={`tap shrink-0 ${open ? 'text-neutral-300' : 'text-neutral-500'}`}
+          >
+            <Trend />
+          </button>
+        )}
+        {readOnly ? (
+          <span className="tabular-nums text-sm text-neutral-400">{lbs ?? '—'}</span>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              save()
+            }}
+          >
+            <input
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onBlur={save}
+              inputMode="decimal"
+              placeholder="—"
+              className="input w-20 text-right"
+            />
+          </form>
+        )}
+        <span className="text-sm text-neutral-500">lbs</span>
+      </div>
+
+      {open && <WeightChart user={user} points={history} />}
     </div>
   )
 }
@@ -911,8 +947,9 @@ export function HabitRow({
   day,
   readOnly,
   names,
+  weights = [],
   done,
-}: P & { day: DayData; names?: string[]; done: boolean }) {
+}: P & { day: DayData; names?: string[]; weights?: WeightPoint[]; done: boolean }) {
   const p = { user, habit, readOnly, done }
   switch (habit.kind) {
     case 'toggle':
@@ -924,7 +961,7 @@ export function HabitRow({
     case 'food':
       return <FoodRowGroup {...p} entries={day.food} />
     case 'weight':
-      return <WeightRow {...p} lbs={day.weight} />
+      return <WeightRow {...p} lbs={day.weight} history={weights} />
     case 'strength':
       return <StrengthRow {...p} workouts={day.workouts} names={names} />
     case 'cardio':
