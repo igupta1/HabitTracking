@@ -49,9 +49,9 @@ Per-person differences all live in that config:
 
 - **Task categories** — two levels, `{ name, subs }` per category. Ishaan's
   `tasks` habit sets SWE (Production Operations, TPU Roadmap, Developer Quality
-  of Life, Collaboration), Project (Outreach, Product) and Misc (Finance, Misc);
-  his list groups under those headings in that order, and his add form has a
-  dropdown for each level. Saloni's has no `categories`, so hers is a flat list
+  of Life, Collaboration, General), Project (Outreach, Product) and Misc
+  (Finance, Misc); his list groups under those headings in that order, and his
+  add form has a dropdown for each level. Saloni's has no `categories`, so hers is a flat list
   with no priorities. Give her some by adding the field.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows

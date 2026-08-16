@@ -94,6 +94,7 @@ export const HABITS: Record<UserId, Habit[]> = {
             'TPU Roadmap',
             'Developer Quality of Life',
             'Collaboration',
+            'General',
           ],
         },
         { name: 'Project', subs: ['Outreach', 'Product'] },
