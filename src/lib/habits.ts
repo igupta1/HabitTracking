@@ -33,8 +33,12 @@ export type HabitKind =
   | 'weight' // daily body weight
 
 export const SECTIONS = [
+  // Ishaan's work splits across the first three, one task list each. Saloni's
+  // one undivided list stays under Career; nothing of hers is in the others.
   'Career',
+  'SWE',
   'Project',
+  'Misc',
   'Physique',
   'Cardio & Stretching',
   'Family/Partner',
@@ -81,11 +85,14 @@ export function filing(
 
 export const HABITS: Record<UserId, Habit[]> = {
   ishaan: [
+    // One task list per section. The category each list is named for is stored
+    // on every task in it, which is how a task says which list it belongs to —
+    // so the lists stay separate without a column of their own.
     {
       key: 'tasks',
       title: 'Tasks',
       kind: 'tasks',
-      section: 'Career',
+      section: 'SWE',
       categories: [
         {
           name: 'SWE',
@@ -97,12 +104,26 @@ export const HABITS: Record<UserId, Habit[]> = {
             'General',
           ],
         },
-        { name: 'Project', subs: ['Outreach', 'Product'] },
-        { name: 'Misc', subs: ['Finance', 'Misc'] },
       ],
     },
 
+    {
+      key: 'tasks_project',
+      title: 'Tasks',
+      kind: 'tasks',
+      section: 'Project',
+      categories: [{ name: 'Project', subs: ['Outreach', 'Product'] }],
+    },
     { key: 'review_gate', title: 'Review Gate', kind: 'toggle', section: 'Project' },
+
+    // Last of the three, so it is also the catch-all — see ownsTask.
+    {
+      key: 'tasks_misc',
+      title: 'Tasks',
+      kind: 'tasks',
+      section: 'Misc',
+      categories: [{ name: 'Misc', subs: ['Finance', 'Misc'] }],
+    },
 
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
     { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique' },
@@ -146,9 +167,33 @@ export function habit(user: UserId, key: string): Habit | undefined {
   return HABITS[user].find((h) => h.key === key)
 }
 
-/** Each kind appears at most once per person, so kind identifies the habit. */
+/**
+ * Every kind but `tasks` appears at most once per person, so for those the kind
+ * identifies the habit. Task lists come one per section, and are addressed by
+ * key instead.
+ */
 export function keyOfKind(user: UserId, kind: HabitKind): string | undefined {
   return HABITS[user].find((h) => h.kind === kind)?.key
+}
+
+/** This user's task lists, in the order their sections appear. */
+export function taskLists(user: UserId): Habit[] {
+  return HABITS[user].filter((h) => h.kind === 'tasks')
+}
+
+/**
+ * Whether a task belongs to this list. A task says which list it is in by the
+ * category it is filed under — 'SWE', 'Project', 'Misc' — which is why those
+ * names are both a list's own and a section's.
+ *
+ * The last list is the catch-all: a task filed under a category no list claims,
+ * or under none at all, lands there rather than vanishing off the page. For
+ * Saloni, whose one list has no categories, that is every task she has.
+ */
+export function ownsTask(user: UserId, h: Habit, t: { category: string | null }): boolean {
+  if (h.categories?.some((c) => c.name === t.category)) return true
+  const claimed = taskLists(user).some((l) => l.categories?.some((c) => c.name === t.category))
+  return !claimed && h.key === taskLists(user).at(-1)?.key
 }
 
 /** Sections that actually have habits for this user, in display order. */

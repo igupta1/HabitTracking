@@ -85,7 +85,11 @@ export async function toggleCheck(u: string, key: string, currentlyDone: boolean
  */
 async function clearOverride(user: UserId, kind: HabitKind) {
   const key = keyOfKind(user, kind)
-  if (!key) return
+  if (key) await clearOverrideKey(user, key)
+}
+
+/** The same, for the task lists — a user has several, so kind names no one of them. */
+async function clearOverrideKey(user: UserId, key: string) {
   await sql`
     delete from toggles
     where user_id = ${user} and habit_key = ${key} and day = ${toDay()}`
@@ -115,6 +119,7 @@ export async function setCounter(u: string, key: string, delta: number) {
 
 export async function addTask(
   u: string,
+  key: string,
   title: string,
   category?: string | null,
   subcategory?: string | null,
@@ -124,8 +129,9 @@ export async function addTask(
   const t = title.trim()
   if (!t) return
 
-  // Only users whose tasks habit defines categories send these.
-  const cats = habit(user, 'tasks')?.categories
+  // `key` says which list, of which there is one per section; only lists that
+  // define categories send the two names.
+  const cats = habit(user, key)?.categories
   const f = filing(cats, category, subcategory)
   const pri = cats && priority && priority >= 1 && priority <= 3 ? Math.round(priority) : null
 
@@ -135,7 +141,7 @@ export async function addTask(
     select ${user}, ${toDay()}, ${t}, ${f.category}, ${f.subcategory}, ${pri},
            coalesce(max(sort_order), 0) + 1000
     from tasks where user_id = ${user} and day = ${toDay()}`
-  await clearOverride(user, 'tasks')
+  await clearOverrideKey(user, key)
   refresh()
 }
 
@@ -152,6 +158,7 @@ export async function addTask(
  */
 export async function reorderTasks(
   u: string,
+  key: string,
   ids: string[],
   categories: (string | null)[],
   subcategories: (string | null)[],
@@ -164,7 +171,7 @@ export async function reorderTasks(
   // than a miss.
   if (!ids.every((id) => UUID.test(id))) return
 
-  const cats = habit(user, 'tasks')?.categories
+  const cats = habit(user, key)?.categories
   const filed = categories.map((c, i) => filing(cats, c, subcategories[i]))
   const pris = priorities.map((p) =>
     cats && p && p >= 1 && p <= 3 ? Math.round(p) : null
@@ -202,11 +209,11 @@ export async function renameTask(u: string, id: string, title: string) {
   refresh()
 }
 
-export async function toggleTask(u: string, id: string) {
+export async function toggleTask(u: string, key: string, id: string) {
   const user = check(u)
   if (!(await ownsRow('tasks', id, user))) return
   await sql`update tasks set done = not done where id = ${id}`
-  await clearOverride(user, 'tasks')
+  await clearOverrideKey(user, key)
   refresh()
 }
 

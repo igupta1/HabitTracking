@@ -66,7 +66,7 @@ function Column({
                     user={who}
                     habit={h}
                     day={day}
-                    done={isDone(h, day)}
+                    done={isDone(who, h, day)}
                     readOnly={readOnly}
                     names={names}
                     weights={weights}

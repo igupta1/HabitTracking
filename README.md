@@ -47,47 +47,51 @@ Adding or changing a habit means editing `src/lib/habits.ts` and pushing.
 
 Per-person differences all live in that config:
 
-- **Task categories** — two levels, `{ name, subs }` per category. Ishaan's
-  `tasks` habit sets SWE (Production Operations, TPU Roadmap, Developer Quality
-  of Life, Collaboration, General), Project (Outreach, Product) and Misc
-  (Finance, Misc); his list groups under those headings in that order, and his
-  add form has a dropdown for each level. Saloni's has no `categories`, so hers is a flat list
-  with no priorities. Give her some by adding the field.
+- **Task lists** — a user can have several, one per section, each a `tasks`
+  habit of its own with its own check, its own count and its own add form.
+  Ishaan has three: **SWE** (Production Operations, TPU Roadmap, Developer
+  Quality of Life, Collaboration, General), **Project** (Outreach, Product) and
+  **Misc** (Finance, Misc). A task says which list it is in by its `category`,
+  which is the list's own name — so those three names are both a list's and a
+  section's, and the row's dropdown only picks the category inside it. Saloni
+  has one, under Career, with no `categories` at all: a flat list with no
+  priorities. Give her some by adding the field.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
 
 Nothing is lost when the config changes under stored rows. A task filed under a
-category the config no longer has collects under a trailing "Other" heading; one
-filed under a category it still has, but under none of that category's subs,
-collects under an "Other" inside it. Both appear only when they hold something —
-you drag things out of them, never in.
+category no list claims — or under none at all — collects in the **last** list,
+under a trailing "Other" heading; one whose list still exists but whose
+subcategory has gone collects under an "Other" inside that list. Both appear
+only when they hold something: you drag things out of them, never in.
 
-**A subcategory is one consecutive list, sorted P1 first.** No headings and no
-gaps between the priorities — the only thing saying which one a task is at is
-the P on its own row. Inside a run of one priority the order is yours: drag a
-row by its ⠿ grip, or focus the grip and press ↑/↓. New tasks land at the
+**A subcategory is one consecutive run of rows, sorted P1 first.** No headings
+and no gaps between the priorities — the only thing saying which one a task is
+at is the P on its own row. Inside a run of one priority the order is yours:
+drag a row by its ⠿ grip, or focus the grip and press ↑/↓. New tasks land at the
 bottom, and ticking something off leaves it exactly where you put it.
 
-**Where you drop a task is what files it.** Category and subcategory both come
-from the heading it lands under, and the priority from the row it lands on top
-of — drop a P1 below a P2 and it *is* a P2 — or, at the top of a subcategory,
-from the row below it. So the list can't come out of order, whatever you do to
-it, and there is no such thing as an invalid place to drop. Dragging alone can't
-make the first P1 in a subcategory that has none, since there is no neighbour to
-copy; the P select on the row does that.
+**Where you drop a task is what files it.** The subcategory comes from the
+heading it lands under and the priority from the row it lands on top of — drop a
+P1 below a P2 and it *is* a P2 — or, at the top of a subcategory, from the row
+below it. So a list can't come out of order, whatever you do to it, and there is
+no such thing as an invalid place to drop. Dragging alone can't make the first
+P1 in a subcategory that has none, since there is no neighbour to copy; the P
+select on the row does that. Dragging can't cross between lists either — they
+are separate boxes in separate sections. Retype it, or change its category in
+the database.
 
-Each heading block carries its subcategory, plus the category name where it is
-the first of that category, so there is no dead strip beside a category name
-that would drop into the one above. Empty subcategories appear as drop targets
-for as long as a drag is in progress — that is the only way into one nothing is
-in yet. The order lives in `tasks.sort_order`, spaced by 1000 and rewritten for
-the whole day on every drop.
+Empty subcategories appear as drop targets for as long as a drag is in progress
+— that is the only way into one nothing is in yet. The order lives in
+`tasks.sort_order`, spaced by 1000 and rewritten for the whole day on every
+drop; a drop only ever renumbers the list it happened in.
 
-The **Tasks** habit counts as done once every **P1** is done, even with P2/P3
-left over — clearing the must-dos is the bar. With no P1s on the list (always
-the case for Saloni, who has no priorities) it falls back to needing everything
-done.
+A **Tasks** habit counts as done once every **P1** in *that list* is done, even
+with P2/P3 left over — clearing the must-dos is the bar. With no P1s on the list
+(always the case for Saloni, who has no priorities) it falls back to needing
+everything done. Each list is judged on its own rows, so clearing SWE says
+nothing about Project, and the day's score counts all three.
 
 **Unfinished tasks roll over.** Opening the page moves any task still open from
 an earlier day onto today — the row moves rather than being copied, so it stays

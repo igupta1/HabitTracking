@@ -17,7 +17,7 @@ import {
   deleteRow,
 } from '@/actions'
 import type { DayData, TaskRow, FoodRow, WorkoutRow, WeightPoint } from '@/lib/queries'
-import { filing, type Category, type Habit, type UserId } from '@/lib/habits'
+import { filing, ownsTask, type Category, type Habit, type UserId } from '@/lib/habits'
 import { WeightChart } from './weight-chart'
 
 /**
@@ -365,6 +365,7 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
     start(() =>
       reorderTasks(
         user,
+        habit.key,
         list.map((t) => t.id),
         list.map((t) => t.category),
         list.map((t) => t.subcategory),
@@ -429,11 +430,17 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
                   }}
                   className="pl-12 pr-4 pt-1.5"
                 >
-                  {g.category !== groups[i - 1]?.category && (
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                      {g.label}
-                    </p>
-                  )}
+                  {/*
+                    A list with one category is named by the section it sits in,
+                    so repeating it here would say nothing. "Other" still needs
+                    its line: it stands for a category the config has dropped.
+                  */}
+                  {(cats.length > 1 || g.category === null) &&
+                    g.category !== groups[i - 1]?.category && (
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                        {g.label}
+                      </p>
+                    )}
                   {g.subLabel && <p className="text-[10px] text-neutral-600">{g.subLabel}</p>}
                 </div>,
               ]
@@ -479,7 +486,7 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
                     }}
                   />
                   <button
-                    onClick={() => start(() => toggleTask(user, t.id))}
+                    onClick={() => start(() => toggleTask(user, habit.key, t.id))}
                     className="tap shrink-0"
                     aria-label={`Mark ${t.title} ${t.done ? 'not done' : 'done'}`}
                   >
@@ -519,7 +526,14 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
             if (!v) return
             setTitle('')
             start(() =>
-              addTask(user, v, cats ? category : null, cats ? sub : null, cats ? priority : null)
+              addTask(
+                user,
+                habit.key,
+                v,
+                cats ? category : null,
+                cats ? sub : null,
+                cats ? priority : null
+              )
             )
           }}
           className="px-4 pb-3 pl-12 pt-1"
@@ -535,23 +549,27 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
           </div>
           {cats && (
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <select
-                value={category}
-                onChange={(e) => {
-                  // The subcategories belong to the category, so picking a new
-                  // one can't leave the old sub standing.
-                  setCategory(e.target.value)
-                  setSub(cats.find((c) => c.name === e.target.value)?.subs[0] ?? '')
-                }}
-                className="min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
-                aria-label="Category"
-              >
-                {cats.map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              {/* One category means one option, which is no choice at all —
+                  the section already says which list this is. */}
+              {cats.length > 1 && (
+                <select
+                  value={category}
+                  onChange={(e) => {
+                    // The subcategories belong to the category, so picking a new
+                    // one can't leave the old sub standing.
+                    setCategory(e.target.value)
+                    setSub(cats.find((c) => c.name === e.target.value)?.subs[0] ?? '')
+                  }}
+                  className="min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
+                  aria-label="Category"
+                >
+                  {cats.map((c) => (
+                    <option key={c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <select
                 value={sub}
                 onChange={(e) => setSub(e.target.value)}
@@ -1013,7 +1031,9 @@ export function HabitRow({
     case 'counter':
       return <CounterRow {...p} count={day.toggles[habit.key]?.count ?? 0} />
     case 'tasks':
-      return <TasksRow {...p} tasks={day.tasks} />
+      // One list per section, each drawing only the tasks filed under its own
+      // category — see ownsTask for where the leftovers go.
+      return <TasksRow {...p} tasks={day.tasks.filter((t) => ownsTask(user, habit, t))} />
     case 'food':
       return <FoodRowGroup {...p} entries={day.food} />
     case 'weight':

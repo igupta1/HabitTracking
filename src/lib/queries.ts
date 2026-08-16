@@ -1,5 +1,5 @@
 import { sql } from '@/db'
-import { habitsFor, type Habit, type UserId } from './habits'
+import { habitsFor, ownsTask, type Habit, type UserId } from './habits'
 import { toDay } from './day'
 
 export type TaskRow = {
@@ -130,7 +130,7 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
 }
 
 /** Whether today's data alone implies the habit is done. */
-function impliedByData(h: Habit, d: DayData): boolean {
+function impliedByData(user: UserId, h: Habit, d: DayData): boolean {
   switch (h.kind) {
     case 'strength':
       return d.workouts.some((w) => w.mode === 'strength')
@@ -141,12 +141,15 @@ function impliedByData(h: Habit, d: DayData): boolean {
     case 'weight':
       return d.weight !== null
     case 'tasks': {
-      if (d.tasks.length === 0) return false
+      // Each list is judged on its own rows, so clearing SWE says nothing about
+      // Project — they are separate habits with separate checks.
+      const mine = d.tasks.filter((t) => ownsTask(user, h, t))
+      if (mine.length === 0) return false
       // Clearing the must-dos counts as done, even with P2/P3 left over. With no
       // P1s to clear (always the case for Saloni, who has no priorities) it
       // falls back to needing the whole list.
-      const p1 = d.tasks.filter((t) => t.priority === 1)
-      return p1.length > 0 ? p1.every((t) => t.done) : d.tasks.every((t) => t.done)
+      const p1 = mine.filter((t) => t.priority === 1)
+      return p1.length > 0 ? p1.every((t) => t.done) : mine.every((t) => t.done)
     }
     default:
       return false
@@ -161,7 +164,7 @@ function impliedByData(h: Habit, d: DayData): boolean {
  * checked or unchecked by hand, and that beats what the data implies. Adding
  * data deletes the row, so the automatic behaviour resumes.
  */
-export function isDone(h: Habit, d: DayData): boolean {
+export function isDone(user: UserId, h: Habit, d: DayData): boolean {
   const row = d.toggles[h.key]
   switch (h.kind) {
     case 'toggle':
@@ -169,13 +172,13 @@ export function isDone(h: Habit, d: DayData): boolean {
     case 'counter':
       return (row?.count ?? 0) >= (h.target ?? 1)
     default:
-      return row ? row.done : impliedByData(h, d)
+      return row ? row.done : impliedByData(user, h, d)
   }
 }
 
 export function progress(user: UserId, d: DayData): { done: number; total: number } {
   const hs = habitsFor(user)
-  return { done: hs.filter((h) => isDone(h, d)).length, total: hs.length }
+  return { done: hs.filter((h) => isDone(user, h, d)).length, total: hs.length }
 }
 
 
