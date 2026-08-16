@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { sql } from '@/db'
 import { toDay } from '@/lib/day'
-import { habit, keyOfKind, isUserId, type HabitKind, type UserId } from '@/lib/habits'
+import { habit, keyOfKind, isUserId, filing, type HabitKind, type UserId } from '@/lib/habits'
 
 /**
  * There is no login: identity is the `/ishaan` or `/saloni` path, and every
@@ -117,6 +117,7 @@ export async function addTask(
   u: string,
   title: string,
   category?: string | null,
+  subcategory?: string | null,
   priority?: number | null
 ) {
   const user = check(u)
@@ -125,13 +126,14 @@ export async function addTask(
 
   // Only users whose tasks habit defines categories send these.
   const cats = habit(user, 'tasks')?.categories
-  const cat = cats && category && cats.includes(category) ? category : null
+  const f = filing(cats, category, subcategory)
   const pri = cats && priority && priority >= 1 && priority <= 3 ? Math.round(priority) : null
 
   // New tasks land at the bottom of the hand-picked order.
   await sql`
-    insert into tasks (user_id, day, title, category, priority, sort_order)
-    select ${user}, ${toDay()}, ${t}, ${cat}, ${pri}, coalesce(max(sort_order), 0) + 1000
+    insert into tasks (user_id, day, title, category, subcategory, priority, sort_order)
+    select ${user}, ${toDay()}, ${t}, ${f.category}, ${f.subcategory}, ${pri},
+           coalesce(max(sort_order), 0) + 1000
     from tasks where user_id = ${user} and day = ${toDay()}`
   await clearOverride(user, 'tasks')
   refresh()
@@ -152,17 +154,18 @@ export async function reorderTasks(
   u: string,
   ids: string[],
   categories: (string | null)[],
+  subcategories: (string | null)[],
   priorities: (number | null)[]
 ) {
   const user = check(u)
   if (ids.length === 0 || ids.length !== categories.length) return
-  if (ids.length !== priorities.length) return
+  if (ids.length !== subcategories.length || ids.length !== priorities.length) return
   // The cast below is to uuid[], so anything malformed would be an error rather
   // than a miss.
   if (!ids.every((id) => UUID.test(id))) return
 
   const cats = habit(user, 'tasks')?.categories
-  const clean = categories.map((c) => (cats && c && cats.includes(c) ? c : null))
+  const filed = categories.map((c, i) => filing(cats, c, subcategories[i]))
   const pris = priorities.map((p) =>
     cats && p && p >= 1 && p <= 3 ? Math.round(p) : null
   )
@@ -170,10 +173,11 @@ export async function reorderTasks(
 
   await sql`
     update tasks t
-    set sort_order = u.ord, category = u.cat, priority = u.pri
-    from unnest(${ids}::uuid[], ${orders}::double precision[], ${clean}::text[],
-                ${pris}::int[])
-      as u(id, ord, cat, pri)
+    set sort_order = u.ord, category = u.cat, subcategory = u.sub, priority = u.pri
+    from unnest(${ids}::uuid[], ${orders}::double precision[],
+                ${filed.map((f) => f.category)}::text[],
+                ${filed.map((f) => f.subcategory)}::text[], ${pris}::int[])
+      as u(id, ord, cat, sub, pri)
     where t.id = u.id and t.user_id = ${user} and t.day = ${toDay()}`
   refresh()
 }

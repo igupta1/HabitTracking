@@ -7,6 +7,7 @@ export type TaskRow = {
   title: string
   done: boolean
   category: string | null
+  subcategory: string | null
   priority: number | null
 }
 export type FoodRow = {
@@ -33,10 +34,11 @@ export type DayData = {
 }
 
 /**
- * `tasks.sort_order` and `food.protein_g` arrived after the app was already
- * deployed, and the only way to reach the hosted database is a SQL console.
- * Rather than make a schema edit a manual step, the same idempotent statements
- * from schema.sql run once per server process, before the first read.
+ * `tasks.sort_order`, `tasks.subcategory` and `food.protein_g` all arrived
+ * after the app was already deployed, and the only way to reach the hosted
+ * database is a SQL console. Rather than make a schema edit a manual step, the
+ * same idempotent statements from schema.sql run once per server process,
+ * before the first read.
  */
 let migrated: Promise<void> | undefined
 function ensureColumns(): Promise<void> {
@@ -48,6 +50,14 @@ function ensureColumns(): Promise<void> {
                                           order by done, priority nulls last, created_at) as n
             from tasks) s
       where t.id = s.id and t.sort_order is null`
+    await sql`alter table tasks add column if not exists subcategory text`
+    // These four spent one deploy as top-level categories before SWE gained
+    // subcategories; move them down a level rather than orphaning them under
+    // "Other". Matches nothing once it has run.
+    await sql`
+      update tasks set subcategory = category, category = 'SWE'
+      where category in ('Production Operations', 'TPU Roadmap',
+                         'Developer Quality of Life', 'Collaboration')`
     // No backfill: entries logged before protein tracking simply have none.
     await sql`alter table food add column if not exists protein_g int`
   })().catch((e) => {
@@ -96,7 +106,7 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
     // then priority (see groupTasks), which is the only sort that happens on
     // its own. Ticking a task off leaves it exactly where you put it.
     sql<TaskRow[]>`
-      select id, title, done, category, priority from tasks
+      select id, title, done, category, subcategory, priority from tasks
       where user_id = ${user} and day = ${day}
       order by sort_order nulls last, created_at`,
     sql<FoodRow[]>`

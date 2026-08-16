@@ -47,36 +47,42 @@ Adding or changing a habit means editing `src/lib/habits.ts` and pushing.
 
 Per-person differences all live in that config:
 
-- **Task categories** — Ishaan's `tasks` habit sets six: the four his work
-  splits into (Production Operations, TPU Roadmap, Developer Quality of Life,
-  Collaboration), then Project and Misc. His list groups under those headers in
-  that order. Saloni's has no `categories`, so hers is a flat list with no
-  priorities. Give her some by adding the field.
+- **Task categories** — two levels, `{ name, subs }` per category. Ishaan's
+  `tasks` habit sets SWE (Production Operations, TPU Roadmap, Developer Quality
+  of Life, Collaboration), Project (Outreach, Product) and Misc (Finance, Misc);
+  his list groups under those headings in that order, and his add form has a
+  dropdown for each level. Saloni's has no `categories`, so hers is a flat list
+  with no priorities. Give her some by adding the field.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
 
-Tasks that predate categories, or whose category was removed from the config,
-collect under a trailing "Other" heading rather than disappearing. That is where
-the old `SWE` tasks went when it split into four; drag them where they belong.
+Nothing is lost when the config changes under stored rows. A task filed under a
+category the config no longer has collects under a trailing "Other" heading; one
+filed under a category it still has, but under none of that category's subs,
+collects under an "Other" inside it. Both appear only when they hold something —
+you drag things out of them, never in.
 
-**A category is one consecutive list, sorted P1 first.** No headings and no gaps
-between the priorities — the only thing saying which one a task is at is the P
-on its own row. Inside a run of one priority the order is yours: drag a row by
-its ⠿ grip, or focus the grip and press ↑/↓. New tasks land at the bottom, and
-ticking something off leaves it exactly where you put it.
+**A subcategory is one consecutive list, sorted P1 first.** No headings and no
+gaps between the priorities — the only thing saying which one a task is at is
+the P on its own row. Inside a run of one priority the order is yours: drag a
+row by its ⠿ grip, or focus the grip and press ↑/↓. New tasks land at the
+bottom, and ticking something off leaves it exactly where you put it.
 
-**Where you drop a task is what sets its priority.** It takes the priority of
-the row it lands under — drop a P1 below a P2 and it *is* a P2 — or, at the top
-of a category, of the row it lands above. So the list can't come out of order,
-whatever you do to it, and there is no such thing as an invalid place to drop.
-Dragging alone can't make the first P1 in a category that has none, since there
-is no neighbour to copy; the P select on the row does that.
+**Where you drop a task is what files it.** Category and subcategory both come
+from the heading it lands under, and the priority from the row it lands on top
+of — drop a P1 below a P2 and it *is* a P2 — or, at the top of a subcategory,
+from the row below it. So the list can't come out of order, whatever you do to
+it, and there is no such thing as an invalid place to drop. Dragging alone can't
+make the first P1 in a subcategory that has none, since there is no neighbour to
+copy; the P select on the row does that.
 
-The category headings are part of the same drag surface, so dropping a task
-under a different heading is how you recategorise it; empty categories appear as
-drop targets for as long as a drag is in progress. The order lives in
-`tasks.sort_order`, spaced by 1000 and rewritten for the whole day on every drop.
+Each heading block carries its subcategory, plus the category name where it is
+the first of that category, so there is no dead strip beside a category name
+that would drop into the one above. Empty subcategories appear as drop targets
+for as long as a drag is in progress — that is the only way into one nothing is
+in yet. The order lives in `tasks.sort_order`, spaced by 1000 and rewritten for
+the whole day on every drop.
 
 The **Tasks** habit counts as done once every **P1** is done, even with P2/P3
 left over — clearing the must-dos is the bar. With no P1s on the list (always
@@ -136,12 +142,14 @@ Schema changes: edit `schema.sql`, re-run `npm run db:init` (which is just
 column still means writing the `alter table` yourself. Against Neon, paste
 `schema.sql` into their SQL editor instead.
 
-`tasks.sort_order` and `food.protein_g` are the exceptions: both were added
-after the app was deployed, so `src/lib/queries.ts` runs the same idempotent
-`alter table` statements (and, for `sort_order`, a backfill) once per server
-process, before the first read. That is there so a push goes live on its own; it
-isn't a migration system, and the next column shouldn't grow one without a
-reason.
+`tasks.sort_order`, `tasks.subcategory` and `food.protein_g` are the exceptions:
+all three were added after the app was deployed, so `src/lib/queries.ts` runs
+the same idempotent `alter table` statements once per server process, before the
+first read. Two carry a backfill beside them — `sort_order` numbering the rows
+that had none, and `subcategory` catching the four names that spent one deploy
+as top-level categories and moving them under SWE. Both match nothing on the
+second run. That is all there so a push goes live on its own; it isn't a
+migration system, and the next column shouldn't grow one without a reason.
 
 ## Deploying to Vercel
 

@@ -23,7 +23,10 @@ create table if not exists tasks (
   title      text not null,
   done       boolean not null default false,
   -- Only for users whose `tasks` habit defines categories (see lib/habits.ts).
-  category   text,
+  -- Two levels: 'SWE' > 'TPU Roadmap'. Either may be null, which draws as
+  -- "Other" — a task keeps its row when the config drops a name.
+  category    text,
+  subcategory text,
   priority   int,                             -- 1..3, P1 highest
   -- Hand-picked order within the day, set by dragging. Spaced by 1000 so a row
   -- can be slotted between two others; `float` so it never runs out of room.
@@ -32,7 +35,7 @@ create table if not exists tasks (
 );
 create index if not exists tasks_user_day on tasks (user_id, day);
 
--- Added after the first deploy; src/lib/queries.ts runs the same two statements
+-- Added after the first deploy; src/lib/queries.ts runs the same statements
 -- once per process so a fresh push doesn't need anyone to open a SQL console.
 alter table tasks add column if not exists sort_order double precision;
 update tasks t set sort_order = s.n * 1000
@@ -40,6 +43,14 @@ update tasks t set sort_order = s.n * 1000
                                       order by done, priority nulls last, created_at) as n
         from tasks) s
   where t.id = s.id and t.sort_order is null;
+
+alter table tasks add column if not exists subcategory text;
+-- These four spent one deploy as top-level categories before SWE gained
+-- subcategories; move them down a level rather than orphaning them under
+-- "Other". Matches nothing once it has run.
+update tasks set subcategory = category, category = 'SWE'
+  where category in ('Production Operations', 'TPU Roadmap',
+                     'Developer Quality of Life', 'Collaboration');
 
 create table if not exists food (
   id         uuid primary key default gen_random_uuid(),

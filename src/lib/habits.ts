@@ -42,6 +42,9 @@ export const SECTIONS = [
 ] as const
 export type Section = (typeof SECTIONS)[number]
 
+/** A task category and the subcategories it holds, both drawn in this order. */
+export type Category = { name: string; subs: string[] }
+
 export type Habit = {
   key: string
   title: string
@@ -53,8 +56,27 @@ export type Habit = {
   calories?: boolean
   /** food only — whether to show the protein field, in grams */
   protein?: boolean
-  /** tasks only — grouping headers, rendered in this order. Omit for a flat list. */
-  categories?: string[]
+  /** tasks only — the category tree, rendered in this order. Omit for a flat list. */
+  categories?: Category[]
+}
+
+/**
+ * A category and subcategory as the config would have them. Anything it doesn't
+ * recognise — a name since removed, a subcategory under the wrong category, a
+ * task filed before either existed — comes back null and draws under "Other".
+ * One rule, shared by the add form, the drag and both writes.
+ */
+export function filing(
+  cats: Category[] | undefined,
+  category?: string | null,
+  subcategory?: string | null
+): { category: string | null; subcategory: string | null } {
+  const c = cats?.find((x) => x.name === category)
+  if (!c) return { category: null, subcategory: null }
+  return {
+    category: c.name,
+    subcategory: subcategory && c.subs.includes(subcategory) ? subcategory : null,
+  }
 }
 
 export const HABITS: Record<UserId, Habit[]> = {
@@ -64,15 +86,18 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'Tasks',
       kind: 'tasks',
       section: 'Career',
-      // The four that replaced a single 'SWE' bucket, then the two that were
-      // always beside it. Tasks still filed under 'SWE' collect under "Other".
       categories: [
-        'Production Operations',
-        'TPU Roadmap',
-        'Developer Quality of Life',
-        'Collaboration',
-        'Project',
-        'Misc',
+        {
+          name: 'SWE',
+          subs: [
+            'Production Operations',
+            'TPU Roadmap',
+            'Developer Quality of Life',
+            'Collaboration',
+          ],
+        },
+        { name: 'Project', subs: ['Outreach', 'Product'] },
+        { name: 'Misc', subs: ['Finance', 'Misc'] },
       ],
     },
 

@@ -17,7 +17,7 @@ import {
   deleteRow,
 } from '@/actions'
 import type { DayData, TaskRow, FoodRow, WorkoutRow, WeightPoint } from '@/lib/queries'
-import type { Habit, UserId } from '@/lib/habits'
+import { filing, type Category, type Habit, type UserId } from '@/lib/habits'
 import { WeightChart } from './weight-chart'
 
 /**
@@ -191,20 +191,25 @@ function TaskTitle({ user, task }: { user: UserId; task: TaskRow }) {
 
 /**
  * The list as it is drawn: one flat group for Saloni, and for Ishaan one per
- * category — plus a trailing "Other" for anything predating categories or filed
- * under one since removed from the config.
+ * subcategory, under a heading for the category it belongs to.
  *
- * A category is a single consecutive run of rows: priority sorts it, P1 first,
- * and the hand-picked order holds inside each run of one priority. There are no
- * headings or gaps between the priorities, so the only thing saying which one a
- * task is at is the P on its own row. Empty categories are hidden until a drag
- * is in progress, when each heading becomes a drop target — that is the only
- * way to move a task into a category nothing is in yet.
+ * A subcategory is a single consecutive run of rows: priority sorts it, P1
+ * first, and the hand-picked order holds inside each run of one priority. There
+ * are no headings or gaps between the priorities, so the only thing saying
+ * which one a task is at is the P on its own row.
+ *
+ * Empty subcategories are hidden until a drag is in progress, when each heading
+ * becomes a drop target — that is the only way to move a task into one nothing
+ * is in yet. The "Other" buckets are the exception: they hold what the config
+ * has stopped recognising, and nothing ever needs filing *into* them, so they
+ * appear only when they have something to show.
  */
 type Group = {
   key: string
   label: string
+  subLabel: string | null
   category: string | null
+  sub: string | null
   items: TaskRow[]
 }
 
@@ -213,27 +218,41 @@ function priorityOf(t: TaskRow): number {
   return t.priority ?? 2
 }
 
-/** Which category a task draws under: its own, or "Other" once that one is gone. */
-function inCategory(t: TaskRow, c: string | null, cats: string[]): boolean {
-  return c === null ? !t.category || !cats.includes(t.category) : t.category === c
-}
+function groupTasks(tasks: TaskRow[], cats: Category[] | undefined, keepEmpty = false): Group[] {
+  if (!cats) return [{ key: '', label: '', subLabel: null, category: null, sub: null, items: tasks }]
 
-function groupTasks(tasks: TaskRow[], cats: string[] | undefined, keepEmpty = false): Group[] {
-  if (!cats) return [{ key: '', label: '', category: null, items: tasks }]
-  const groups = [...cats, null].map((c) => ({
-    key: c ?? '',
-    label: c ?? 'Other',
-    category: c,
+  const group = (category: string | null, sub: string | null): Group => ({
+    key: `${category ?? ''}/${sub ?? ''}`,
+    label: category ?? 'Other',
+    // Unfiled inside a real category gets an "Other" line of its own; the
+    // unrecognised category has nothing to say below its own heading.
+    subLabel: sub ?? (category ? 'Other' : null),
+    category,
+    sub,
     // Sort is stable, so it only ever moves a row between priorities — the hand
     // order inside one priority comes through it untouched.
-    items: tasks.filter((t) => inCategory(t, c, cats)).sort((a, b) => priorityOf(a) - priorityOf(b)),
-  }))
-  return keepEmpty ? groups : groups.filter((g) => g.items.length > 0)
+    items: tasks
+      .filter((t) => {
+        const f = filing(cats, t.category, t.subcategory)
+        return f.category === category && f.subcategory === sub
+      })
+      .sort((a, b) => priorityOf(a) - priorityOf(b)),
+  })
+
+  const groups = cats.flatMap((c) => [
+    ...c.subs.map((s) => group(c.name, s)),
+    group(c.name, null), // filed under the category but under none of its subs
+  ])
+  groups.push(group(null, null)) // filed under a category the config has dropped
+
+  return groups.filter((g) => g.items.length > 0 || (keepEmpty && g.sub !== null))
 }
 
 /** Order and grouping together, which is what a drop has to be compared against. */
 function shape(tasks: TaskRow[]): string {
-  return tasks.map((t) => `${t.id}:${t.category ?? ''}:${t.priority ?? ''}`).join('|')
+  return tasks
+    .map((t) => `${t.id}:${t.category ?? ''}:${t.subcategory ?? ''}:${t.priority ?? ''}`)
+    .join('|')
 }
 
 /**
@@ -243,7 +262,7 @@ function shape(tasks: TaskRow[]): string {
  * changes stuck on the server until a reload.
  */
 function stamp(tasks: TaskRow[]): string {
-  return tasks.map((t) => `${t.id}:${t.category ?? ''}:${t.priority ?? ''}:${+t.done}:${t.title}`).join('|')
+  return tasks.map((t) => `${shape([t])}:${+t.done}:${t.title}`).join('|')
 }
 
 /**
@@ -267,14 +286,15 @@ function Grip(props: React.ComponentProps<'button'>) {
 function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]; done: boolean }) {
   const cats = habit.categories
   const [title, setTitle] = useState('')
-  const [category, setCategory] = useState(cats?.[0] ?? '')
+  const [category, setCategory] = useState(cats?.[0]?.name ?? '')
+  const [sub, setSub] = useState(cats?.[0]?.subs[0] ?? '')
   const [priority, setPriority] = useState(2)
   const [pending, start] = useTransition()
 
   // The list is held locally while you drag so it reorders under your finger
   // instead of after a round trip, then re-synced whenever the server's copy
   // differs. Storing it already grouped keeps a flat index unambiguous: it is
-  // both a position and, via the group it falls in, a category.
+  // both a position and, via the group it falls in, a filing.
   const flatten = (ts: TaskRow[]) => groupTasks(ts, cats).flatMap((g) => g.items)
   const [items, setItems] = useState(() => flatten(tasks))
   const fromServer = shape(flatten(tasks))
@@ -291,15 +311,16 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
   const doneCount = items.filter((t) => t.done).length
 
   /**
-   * Put `id` where the finger is. Position and category are read off the same y
+   * Put `id` where the finger is. Position and heading are read off the same y
    * independently — how many rows it has passed, and which heading it is below
    * — which agree because both only ever grow as you drag downwards. Landing
-   * under a heading is what sets the task's category.
+   * under a heading is what files the task: both its category and its
+   * subcategory come from the one it lands in.
    *
    * The priority comes from the row it lands under instead: drop a P1 below a
    * P2 and it becomes a P2, which is the only way to change it by dragging now
    * that the priorities have no headings of their own to aim at. At the top of
-   * a category there is nothing above to copy, so it takes the row below.
+   * a subcategory there is nothing above to copy, so it takes the row below.
    */
   function dragTo(id: string, y: number) {
     const rest = items.filter((t) => t.id !== id)
@@ -313,16 +334,24 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
       const r = heads.current.get(g.key)?.getBoundingClientRect()
       if (r && y > r.top) target = g
     }
-    const cat = target?.category ?? null
-    // Neighbours in another category say nothing about this one: dropping into
-    // a category nothing is in yet leaves the priority as it was.
-    const near = [rest[to - 1], rest[to]].find((t) => t && cats && inCategory(t, cat, cats))
+    // Neighbours filed elsewhere say nothing about this subcategory: dropping
+    // into one nothing is in yet leaves the priority as it was.
+    const near = [rest[to - 1], rest[to]].find((t) => {
+      if (!t || !cats) return false
+      const f = filing(cats, t.category, t.subcategory)
+      return f.category === (target?.category ?? null) && f.subcategory === (target?.sub ?? null)
+    })
 
     setItems((prev) => {
       const moved = prev.find((t) => t.id === id)
       if (!moved) return prev
       const landed = cats
-        ? { ...moved, category: cat, priority: priorityOf(near ?? moved) }
+        ? {
+            ...moved,
+            category: target?.category ?? null,
+            subcategory: target?.sub ?? null,
+            priority: priorityOf(near ?? moved),
+          }
         : moved
       const others = prev.filter((t) => t.id !== id)
       const next = [...others.slice(0, to), landed, ...others.slice(to)]
@@ -338,12 +367,13 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         user,
         list.map((t) => t.id),
         list.map((t) => t.category),
+        list.map((t) => t.subcategory),
         list.map((t) => t.priority)
       )
     )
   }
 
-  /** Arrow keys step through the flat list, taking the priority and category of
+  /** Arrow keys step through the flat list, taking the priority and filing of
    *  the row they step past — the same trade the pointer makes. */
   function nudge(id: string, delta: number) {
     const from = items.findIndex((t) => t.id === id)
@@ -354,6 +384,7 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
     next.splice(to, 0, {
       ...moved,
       category: items[to].category,
+      subcategory: items[to].subcategory,
       priority: cats ? priorityOf(items[to]) : moved.priority,
     })
     setItems(next)
@@ -381,22 +412,30 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         drops the pointer capture and kills the drag halfway through.
       */}
       <div className="mt-1">
-        {groups.flatMap((g) => [
-          // The category heading, which is also the target dragTo measures
-          // against. Empty ones only exist mid-drag (see groupTasks), so this
-          // adds no heading at rest that isn't standing over real rows.
-          ...(g.label
+        {groups.flatMap((g, i) => [
+          // One heading block per subcategory, carrying its category's name too
+          // where it is the first of that category — so the whole block belongs
+          // to the group below it, with no dead strip against the category name
+          // that would drop into the previous one. It is also the target dragTo
+          // measures against. Empty ones only exist mid-drag (see groupTasks),
+          // so nothing stands over an empty box at rest.
+          ...(cats
             ? [
-                <p
-                  key={`cat:${g.key}`}
+                <div
+                  key={`head:${g.key}`}
                   ref={(el) => {
                     if (el) heads.current.set(g.key, el)
                     else heads.current.delete(g.key)
                   }}
-                  className="pl-12 pr-4 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-600"
+                  className="pl-12 pr-4 pt-1.5"
                 >
-                  {g.label}
-                </p>,
+                  {g.category !== groups[i - 1]?.category && (
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                      {g.label}
+                    </p>
+                  )}
+                  {g.subLabel && <p className="text-[10px] text-neutral-600">{g.subLabel}</p>}
+                </div>,
               ]
             : []),
           ...g.items.map((t) => (
@@ -479,7 +518,9 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
             const v = title.trim()
             if (!v) return
             setTitle('')
-            start(() => addTask(user, v, cats ? category : null, cats ? priority : null))
+            start(() =>
+              addTask(user, v, cats ? category : null, cats ? sub : null, cats ? priority : null)
+            )
           }}
           className="px-4 pb-3 pl-12 pt-1"
         >
@@ -493,16 +534,33 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
             <Add disabled={!title.trim()} />
           </div>
           {cats && (
-            <div className="mt-1.5 flex gap-2">
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
+                onChange={(e) => {
+                  // The subcategories belong to the category, so picking a new
+                  // one can't leave the old sub standing.
+                  setCategory(e.target.value)
+                  setSub(cats.find((c) => c.name === e.target.value)?.subs[0] ?? '')
+                }}
+                className="min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
                 aria-label="Category"
               >
                 {cats.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                  <option key={c.name} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sub}
+                onChange={(e) => setSub(e.target.value)}
+                className="min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
+                aria-label="Subcategory"
+              >
+                {(cats.find((c) => c.name === category)?.subs ?? []).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
                   </option>
                 ))}
               </select>
