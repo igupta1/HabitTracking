@@ -48,14 +48,15 @@ Adding or changing a habit means editing `src/lib/habits.ts` and pushing.
 Per-person differences all live in that config:
 
 - **Task lists** — a user can have several, one per section, each a `tasks`
-  habit of its own with its own check, its own count and its own add form.
-  Ishaan has three: **SWE** (Production Operations, TPU Roadmap, Developer
-  Quality of Life, Collaboration, General), **Project** (Outreach, Product) and
-  **Misc** (Finance, Misc). A task says which list it is in by its `category`,
-  which is the list's own name — so those three names are both a list's and a
-  section's, and the row's dropdown only picks the category inside it. Saloni
-  has one, under Career, with no `categories` at all: a flat list with no
-  priorities. Give her some by adding the field.
+  habit of its own with its own title, check, count and add form. Ishaan has
+  three, each titled for its own work: **SWE** (Production Operations, TPU
+  Roadmap, Developer Quality of Life, Collaboration, General), **Project**
+  (Outreach, Product) and **Misc** (Finance, Misc). A task says which list it is
+  in by its `category`, which is the list's own name — so each of those three
+  names is a list's, a section's and a row's title at once, and the add form's
+  dropdown only picks the category inside it. Saloni has one, under Career, with
+  no `categories` at all: a flat list with no priorities. Give her some by
+  adding the field.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
@@ -87,7 +88,7 @@ Empty subcategories appear as drop targets for as long as a drag is in progress
 `tasks.sort_order`, spaced by 1000 and rewritten for the whole day on every
 drop; a drop only ever renumbers the list it happened in.
 
-A **Tasks** habit counts as done once every **P1** in *that list* is done, even
+A task list counts as done once every **P1** in *that list* is done, even
 with P2/P3 left over — clearing the must-dos is the bar. With no P1s on the list
 (always the case for Saloni, who has no priorities) it falls back to needing
 everything done. Each list is judged on its own rows, so clearing SWE says

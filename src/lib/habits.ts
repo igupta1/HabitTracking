@@ -85,12 +85,13 @@ export function filing(
 
 export const HABITS: Record<UserId, Habit[]> = {
   ishaan: [
-    // One task list per section. The category each list is named for is stored
+    // One task list per section, each titled for the work in it rather than
+    // "Tasks" three times over. The category each list is named for is stored
     // on every task in it, which is how a task says which list it belongs to —
     // so the lists stay separate without a column of their own.
     {
       key: 'tasks',
-      title: 'Tasks',
+      title: 'SWE',
       kind: 'tasks',
       section: 'SWE',
       categories: [
@@ -109,7 +110,7 @@ export const HABITS: Record<UserId, Habit[]> = {
 
     {
       key: 'tasks_project',
-      title: 'Tasks',
+      title: 'Project',
       kind: 'tasks',
       section: 'Project',
       categories: [{ name: 'Project', subs: ['Outreach', 'Product'] }],
@@ -119,7 +120,7 @@ export const HABITS: Record<UserId, Habit[]> = {
     // Last of the three, so it is also the catch-all — see ownsTask.
     {
       key: 'tasks_misc',
-      title: 'Tasks',
+      title: 'Misc',
       kind: 'tasks',
       section: 'Misc',
       categories: [{ name: 'Misc', subs: ['Finance', 'Misc'] }],
