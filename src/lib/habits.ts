@@ -64,7 +64,16 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'Tasks',
       kind: 'tasks',
       section: 'Career',
-      categories: ['SWE', 'Project', 'Misc'],
+      // The four that replaced a single 'SWE' bucket, then the two that were
+      // always beside it. Tasks still filed under 'SWE' collect under "Other".
+      categories: [
+        'Production Operations',
+        'TPU Roadmap',
+        'Developer Quality of Life',
+        'Collaboration',
+        'Project',
+        'Misc',
+      ],
     },
 
     { key: 'review_gate', title: 'Review Gate', kind: 'toggle', section: 'Project' },

@@ -191,44 +191,43 @@ function TaskTitle({ user, task }: { user: UserId; task: TaskRow }) {
 
 /**
  * The list as it is drawn: one flat group for Saloni, and for Ishaan one per
- * category — plus a trailing "Other" for anything predating categories — split
- * again by priority, P1 first. Priority sorts itself; the hand-picked order
- * only ever applies inside one segment. Empty segments are hidden until a drag
- * is in progress, when each one becomes a drop target — that is the only way to
- * move a task into a segment nothing is in yet.
+ * category — plus a trailing "Other" for anything predating categories or filed
+ * under one since removed from the config.
+ *
+ * A category is a single consecutive run of rows: priority sorts it, P1 first,
+ * and the hand-picked order holds inside each run of one priority. There are no
+ * headings or gaps between the priorities, so the only thing saying which one a
+ * task is at is the P on its own row. Empty categories are hidden until a drag
+ * is in progress, when each heading becomes a drop target — that is the only
+ * way to move a task into a category nothing is in yet.
  */
 type Group = {
   key: string
   label: string
   category: string | null
-  priority: number | null
   items: TaskRow[]
 }
-
-const PRIORITIES = [1, 2, 3]
 
 /** Rows written before priorities existed read as P2, which is what the row shows. */
 function priorityOf(t: TaskRow): number {
   return t.priority ?? 2
 }
 
+/** Which category a task draws under: its own, or "Other" once that one is gone. */
+function inCategory(t: TaskRow, c: string | null, cats: string[]): boolean {
+  return c === null ? !t.category || !cats.includes(t.category) : t.category === c
+}
+
 function groupTasks(tasks: TaskRow[], cats: string[] | undefined, keepEmpty = false): Group[] {
-  if (!cats) return [{ key: '', label: '', category: null, priority: null, items: tasks }]
-  const groups: Group[] = []
-  for (const c of [...cats, null]) {
-    const inCat = tasks.filter((t) =>
-      c === null ? !t.category || !cats.includes(t.category) : t.category === c
-    )
-    for (const p of PRIORITIES) {
-      groups.push({
-        key: `${c ?? ''}:${p}`,
-        label: c ?? 'Other',
-        category: c,
-        priority: p,
-        items: inCat.filter((t) => priorityOf(t) === p),
-      })
-    }
-  }
+  if (!cats) return [{ key: '', label: '', category: null, items: tasks }]
+  const groups = [...cats, null].map((c) => ({
+    key: c ?? '',
+    label: c ?? 'Other',
+    category: c,
+    // Sort is stable, so it only ever moves a row between priorities — the hand
+    // order inside one priority comes through it untouched.
+    items: tasks.filter((t) => inCategory(t, c, cats)).sort((a, b) => priorityOf(a) - priorityOf(b)),
+  }))
   return keepEmpty ? groups : groups.filter((g) => g.items.length > 0)
 }
 
@@ -292,10 +291,15 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
   const doneCount = items.filter((t) => t.done).length
 
   /**
-   * Put `id` where the finger is. Position and segment are read off the same y
-   * independently — how many rows it has passed, and which segment heading it
-   * is below — which agree because both only ever grow as you drag downwards.
-   * Landing in a segment is what sets the task's category and priority.
+   * Put `id` where the finger is. Position and category are read off the same y
+   * independently — how many rows it has passed, and which heading it is below
+   * — which agree because both only ever grow as you drag downwards. Landing
+   * under a heading is what sets the task's category.
+   *
+   * The priority comes from the row it lands under instead: drop a P1 below a
+   * P2 and it becomes a P2, which is the only way to change it by dragging now
+   * that the priorities have no headings of their own to aim at. At the top of
+   * a category there is nothing above to copy, so it takes the row below.
    */
   function dragTo(id: string, y: number) {
     const rest = items.filter((t) => t.id !== id)
@@ -309,12 +313,16 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
       const r = heads.current.get(g.key)?.getBoundingClientRect()
       if (r && y > r.top) target = g
     }
+    const cat = target?.category ?? null
+    // Neighbours in another category say nothing about this one: dropping into
+    // a category nothing is in yet leaves the priority as it was.
+    const near = [rest[to - 1], rest[to]].find((t) => t && cats && inCategory(t, cat, cats))
 
     setItems((prev) => {
       const moved = prev.find((t) => t.id === id)
       if (!moved) return prev
       const landed = cats
-        ? { ...moved, category: target?.category ?? null, priority: target?.priority ?? null }
+        ? { ...moved, category: cat, priority: priorityOf(near ?? moved) }
         : moved
       const others = prev.filter((t) => t.id !== id)
       const next = [...others.slice(0, to), landed, ...others.slice(to)]
@@ -335,7 +343,8 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
     )
   }
 
-  /** Arrow keys step through the flat list, taking the neighbour's segment with them. */
+  /** Arrow keys step through the flat list, taking the priority and category of
+   *  the row they step past — the same trade the pointer makes. */
   function nudge(id: string, delta: number) {
     const from = items.findIndex((t) => t.id === id)
     const to = from + delta
@@ -372,32 +381,21 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         drops the pointer capture and kills the drag halfway through.
       */}
       <div className="mt-1">
-        {groups.flatMap((g, i) => [
-          // The category heading, once per run of its segments.
-          ...(g.label && g.category !== groups[i - 1]?.category
+        {groups.flatMap((g) => [
+          // The category heading, which is also the target dragTo measures
+          // against. Empty ones only exist mid-drag (see groupTasks), so this
+          // adds no heading at rest that isn't standing over real rows.
+          ...(g.label
             ? [
                 <p
                   key={`cat:${g.key}`}
-                  className="pl-12 pr-4 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-600"
-                >
-                  {g.label}
-                </p>,
-              ]
-            : []),
-          // The segment heading, which is also the target dragTo measures
-          // against. Empty ones only exist mid-drag (see groupTasks), so this
-          // adds no heading at rest that isn't standing over real rows.
-          ...(g.priority !== null
-            ? [
-                <p
-                  key={`seg:${g.key}`}
                   ref={(el) => {
                     if (el) heads.current.set(g.key, el)
                     else heads.current.delete(g.key)
                   }}
-                  className="pl-12 pr-4 pt-1 text-[10px] tabular-nums text-neutral-700"
+                  className="pl-12 pr-4 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-neutral-600"
                 >
-                  P{g.priority}
+                  {g.label}
                 </p>,
               ]
             : []),
