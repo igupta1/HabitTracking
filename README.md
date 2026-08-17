@@ -34,7 +34,8 @@ src/lib/day.ts                   day boundaries (America/LA, flips at 4am)
 src/lib/queries.ts               reads
 src/actions.ts                   writes (server actions — no REST API, no store)
 src/components/rows.tsx          one component per habit kind
-src/components/weight-chart.tsx  date vs lbs, the only chart in the app
+src/components/weight-chart.tsx  date vs lbs
+src/components/consistency.tsx   a cell per day, filled on the days it was done
 src/app/[user]/page.tsx          the only real page: both columns
 ```
 
@@ -119,8 +120,31 @@ is drawn to show. Pointing at it, or focusing it and pressing ←/→, reads out
 single day. Each chart draws one person, in that person's colour, so nothing
 ever has to tell the two colours apart — they don't separate under deuteranopia.
 
-This is the only read in the app that looks past today: `weightHistory` in
-`src/lib/queries.ts`, whose `WEIGHT_WINDOW_DAYS` is the one number to change.
+**Some habits have a consistency grid**, behind the same button: a cell per day,
+filled on the days it was done. Weeks run left to right and weekdays top to
+bottom, so a column is a week and a row is every Tuesday — which is the whole
+reason for the shape, since only that draws "he never does it at weekends" as
+two blank rows. Above it sits the count, "27 of 39 days". No streak: those are
+still deliberately not kept, and a run of cells says the same thing without
+turning one missed day into a zero.
+
+Which rows have one is a `history: true` in `src/lib/habits.ts` — currently
+Ishaan's Strength Workout, Creatine, Cardio, Stretching and Wart Pad. It can go
+on any habit whose day is a yes/no answerable from stored rows alone (toggle,
+counter, strength, cardio); food and tasks have no single answer to draw, and
+body weight has its chart instead.
+
+`habitHistory` reads what those rows need, and it answers the same question
+`isDone` does — a stored toggle row wins where there is one, and for strength
+and cardio a logged workout answers where there isn't. It is written out twice
+because isDone reads a whole day's `DayData` and this would have to build
+ninety of them. The window starts at the earliest day anything was recorded
+rather than a flat 90 days back, so a new install reads as a fortnight of habit
+instead of ten weeks of failure it was never around for.
+
+These two are the only reads in the app that look past today: `weightHistory`
+and `habitHistory` in `src/lib/queries.ts`, whose `WEIGHT_WINDOW_DAYS` and
+`HISTORY_WINDOW_DAYS` are the numbers to change.
 
 Every add form has an explicit `+` submit button, and needs one: a form with
 more than one blocking field and no submit button never implicitly submits on
@@ -184,10 +208,11 @@ Cut to keep this small; add only if actually missed:
   typed before. Sets, reps and weights stay in RepCount, which already has good
   UI for them — duplicating it was a third of the codebase and added nothing to
   the accountability loop, which only needs "he trained, and it was Push day".
-- Streaks and weekly scores.
+- Streaks and weekly scores. The consistency grid shows the same run of days
+  without letting one missed morning reset a number to zero.
 - Any judgement about *when* you added a task. A task added at 4pm that you
   finish by midnight is just a task.
-- An activity feed / history page. The data is all there per-day, and body
-  weight is the one thing with any past on screen — a chart on the row itself,
-  not a page.
+- An activity feed / history page. The past that is on screen is on the row it
+  belongs to — a chart behind body weight, a grid behind the habits that asked
+  for one — never a page of its own.
 - Offline support. Logging with no signal fails rather than queuing.

@@ -1,6 +1,6 @@
 import { sql } from '@/db'
 import { habitsFor, ownsTask, type Habit, type UserId } from './habits'
-import { toDay } from './day'
+import { toDay, shiftDay, daysFrom } from './day'
 
 export type TaskRow = {
   id: string
@@ -201,6 +201,68 @@ export async function weightHistory(
     select to_char(day, 'YYYY-MM-DD') as day, lbs from weights
     where user_id = ${user} and day > ${day}::date - ${WEIGHT_WINDOW_DAYS}::int
     order by day`
+}
+
+export type DayMark = { day: string; done: boolean }
+
+/** How far back the consistency grid reaches. */
+export const HISTORY_WINDOW_DAYS = 90
+
+/**
+ * Done or not, day by day, for every habit whose config asks for a history —
+ * what the grid behind those rows draws.
+ *
+ * The rule is `isDone`'s, applied to a window instead of one day: a stored
+ * toggle row is the answer where there is one, and for the workout-backed kinds
+ * the existence of a workout answers where there isn't. It is written out again
+ * here rather than reused because isDone reads a whole day's DayData and this
+ * would have to build ninety of them.
+ *
+ * The window starts at the earliest day anything was recorded, not a flat 90
+ * days back, so a fortnight-old install reads as a fortnight of habit rather
+ * than ten weeks of failure it was never around for.
+ */
+export async function habitHistory(
+  user: UserId,
+  day: string = toDay()
+): Promise<Record<string, DayMark[]>> {
+  const tracked = habitsFor(user).filter((h) => h.history)
+  if (tracked.length === 0) return {}
+
+  const from = shiftDay(day, -(HISTORY_WINDOW_DAYS - 1))
+  const [toggles, workouts] = await Promise.all([
+    sql<{ habit_key: string; day: string; done: boolean; count: number }[]>`
+      select habit_key, to_char(day, 'YYYY-MM-DD') as day, done, count from toggles
+      where user_id = ${user} and day between ${from}::date and ${day}::date`,
+    sql<{ day: string; mode: string }[]>`
+      select distinct to_char(day, 'YYYY-MM-DD') as day, mode from workouts
+      where user_id = ${user} and day between ${from}::date and ${day}::date`,
+  ])
+
+  const marks = new Map(toggles.map((t) => [`${t.habit_key}|${t.day}`, t]))
+  const worked = new Set(workouts.map((w) => `${w.mode}|${w.day}`))
+
+  // Nothing recorded in the window means nothing to draw — no grid of blanks.
+  const seen = [...toggles, ...workouts].map((r) => r.day).sort()
+  if (seen.length === 0) return {}
+  const days = daysFrom(seen[0], day)
+
+  return Object.fromEntries(
+    tracked.map((h) => [
+      h.key,
+      days.map((d) => {
+        const row = marks.get(`${h.key}|${d}`)
+        const done =
+          h.kind === 'counter'
+            ? (row?.count ?? 0) >= (h.target ?? 1)
+            : h.kind === 'toggle'
+              ? (row?.done ?? false)
+              : // strength and cardio, whose kind is also the workout's mode
+                (row?.done ?? worked.has(`${h.kind}|${d}`))
+        return { day: d, done }
+      }),
+    ])
+  )
 }
 
 /**

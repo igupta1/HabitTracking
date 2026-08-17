@@ -76,3 +76,23 @@ export function formatShortDay(day: string): string {
 export function dayIndex(day: string): number {
   return Math.round(noon(day).getTime() / 86_400_000)
 }
+
+/** The day `delta` days from this one, forwards or back. */
+export function shiftDay(day: string, delta: number): string {
+  const d = noon(day)
+  d.setUTCDate(d.getUTCDate() + delta)
+  return d.toISOString().slice(0, 10)
+}
+
+/** 0 for Sunday through 6 for Saturday — the row a day sits on in the grid. */
+export function weekdayOf(day: string): number {
+  return noon(day).getUTCDay()
+}
+
+/** Every day from `from` to `to`, inclusive. Both are `YYYY-MM-DD`. */
+export function daysFrom(from: string, to: string): string[] {
+  const out: string[] = []
+  // The format sorts as it reads, so a string compare is a date compare.
+  for (let d = from; d <= to; d = shiftDay(d, 1)) out.push(d)
+  return out
+}

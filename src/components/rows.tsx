@@ -16,9 +16,10 @@ import {
   logCardio,
   deleteRow,
 } from '@/actions'
-import type { DayData, TaskRow, FoodRow, WorkoutRow, WeightPoint } from '@/lib/queries'
+import type { DayData, TaskRow, FoodRow, WorkoutRow, WeightPoint, DayMark } from '@/lib/queries'
 import { filing, ownsTask, type Category, type Habit, type UserId } from '@/lib/habits'
 import { WeightChart } from './weight-chart'
+import { Consistency } from './consistency'
 
 /**
  * One component per habit kind, shared between your own Today page and the
@@ -85,19 +86,79 @@ function X({ onClick }: { onClick: () => void }) {
   )
 }
 
+/** The chart button's glyph: drawn, so it sits at icon size next to the ✕ and ⠿. */
+function Trend() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M2 11.5 6 7l3 2.5L14 4" />
+    </svg>
+  )
+}
+
+/**
+ * One affordance for "show me the past", on the weight row and on every habit
+ * whose config asks for a history. The click is stopped from bubbling because
+ * some of the rows it sits in are themselves clickable.
+ */
+function HistoryButton({
+  open,
+  label,
+  onToggle,
+}: {
+  open: boolean
+  label: string
+  onToggle: () => void
+}) {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggle()
+      }}
+      aria-expanded={open}
+      aria-label={`${open ? 'Hide' : 'Show'} ${label}`}
+      className={`tap shrink-0 ${open ? 'text-neutral-300' : 'text-neutral-500'}`}
+    >
+      <Trend />
+    </button>
+  )
+}
+
 // ---------------------------------------------------------------- toggle
 
-function ToggleRow({ user, habit, readOnly, done }: P & { done: boolean }) {
+function ToggleRow({ user, habit, readOnly, done, history }: P & { done: boolean; history: DayMark[] }) {
   const [pending, start] = useTransition()
+  const [open, setOpen] = useState(false)
+  // The whole line is the tap target, so the history button sits beside it
+  // rather than inside — a button within a button is not markup.
   const Tag = readOnly ? 'div' : 'button'
   return (
-    <Tag
-      onClick={readOnly ? undefined : () => start(() => toggleCheck(user, habit.key, done))}
-      className={`tap flex w-full items-center gap-3 px-4 py-3 text-left ${pending ? 'opacity-50' : ''}`}
-    >
-      <Check on={done} />
-      <Title>{habit.title}</Title>
-    </Tag>
+    <div className={pending ? 'opacity-50' : ''}>
+      <div className="flex items-center">
+        <Tag
+          onClick={readOnly ? undefined : () => start(() => toggleCheck(user, habit.key, done))}
+          className="tap flex flex-1 items-center gap-3 px-4 py-3 text-left"
+        >
+          <Check on={done} />
+          <Title>{habit.title}</Title>
+        </Tag>
+        {history.length > 0 && (
+          <div className="pr-4">
+            <HistoryButton open={open} label="history" onToggle={() => setOpen((o) => !o)} />
+          </div>
+        )}
+      </div>
+      {open && <Consistency user={user} days={history} />}
+    </div>
   )
 }
 
@@ -756,24 +817,6 @@ function FoodRowGroup({
 
 // ---------------------------------------------------------------- weight
 
-/** The chart button's glyph: drawn, so it sits at icon size next to the ✕ and ⠿. */
-function Trend() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M2 11.5 6 7l3 2.5L14 4" />
-    </svg>
-  )
-}
-
 function WeightRow({
   user,
   habit,
@@ -798,14 +841,7 @@ function WeightRow({
         <Title>{habit.title}</Title>
         {/* Nothing weighed in yet is nothing to plot, so the button waits. */}
         {history.length > 0 && (
-          <button
-            onClick={() => setOpen((o) => !o)}
-            aria-expanded={open}
-            aria-label={`${open ? 'Hide' : 'Show'} weight chart`}
-            className={`tap shrink-0 ${open ? 'text-neutral-300' : 'text-neutral-500'}`}
-          >
-            <Trend />
-          </button>
+          <HistoryButton open={open} label="weight chart" onToggle={() => setOpen((o) => !o)} />
         )}
         {readOnly ? (
           <span className="tabular-nums text-sm text-neutral-400">{lbs ?? '—'}</span>
@@ -873,8 +909,10 @@ function StrengthRow({
   workouts,
   names = [],
   done,
-}: P & { workouts: WorkoutRow[]; names?: string[]; done: boolean }) {
+  history,
+}: P & { workouts: WorkoutRow[]; names?: string[]; done: boolean; history: DayMark[] }) {
   const [value, setValue] = useState('')
+  const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
   const mine = workouts.filter((w) => w.mode === 'strength')
 
@@ -883,7 +921,12 @@ function StrengthRow({
       <div className="flex items-center gap-3 px-4 py-3">
         <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
+        {history.length > 0 && (
+          <HistoryButton open={open} label="history" onToggle={() => setOpen((o) => !o)} />
+        )}
       </div>
+
+      {open && <Consistency user={user} days={history} />}
 
       {mine.map((w) => (
         <WorkoutLine key={w.id} user={user} workout={w} readOnly={readOnly} />
@@ -925,8 +968,10 @@ function CardioRow({
   readOnly,
   workouts,
   done,
-}: P & { workouts: WorkoutRow[]; done: boolean }) {
+  history,
+}: P & { workouts: WorkoutRow[]; done: boolean; history: DayMark[] }) {
   const [open, setOpen] = useState(false)
+  const [past, setPast] = useState(false)
   const [name, setName] = useState('run')
   const [miles, setMiles] = useState('')
   const [mins, setMins] = useState('')
@@ -942,8 +987,13 @@ function CardioRow({
       >
         <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
+        {history.length > 0 && (
+          <HistoryButton open={past} label="history" onToggle={() => setPast((p) => !p)} />
+        )}
         {!readOnly && <span className="text-neutral-500">{open ? '−' : '+'}</span>}
       </div>
+
+      {past && <Consistency user={user} days={history} />}
 
       {mine.map((w) => (
         <WorkoutLine
@@ -1022,12 +1072,22 @@ export function HabitRow({
   readOnly,
   names,
   weights = [],
+  history = {},
   done,
-}: P & { day: DayData; names?: string[]; weights?: WeightPoint[]; done: boolean }) {
+}: P & {
+  day: DayData
+  names?: string[]
+  weights?: WeightPoint[]
+  history?: Record<string, DayMark[]>
+  done: boolean
+}) {
   const p = { user, habit, readOnly, done }
+  // Empty for every habit whose config doesn't ask for one, which is what hides
+  // the button — see habitHistory.
+  const past = history[habit.key] ?? []
   switch (habit.kind) {
     case 'toggle':
-      return <ToggleRow {...p} />
+      return <ToggleRow {...p} history={past} />
     case 'counter':
       return <CounterRow {...p} count={day.toggles[habit.key]?.count ?? 0} />
     case 'tasks':
@@ -1039,8 +1099,8 @@ export function HabitRow({
     case 'weight':
       return <WeightRow {...p} lbs={day.weight} history={weights} />
     case 'strength':
-      return <StrengthRow {...p} workouts={day.workouts} names={names} />
+      return <StrengthRow {...p} workouts={day.workouts} names={names} history={past} />
     case 'cardio':
-      return <CardioRow {...p} workouts={day.workouts} />
+      return <CardioRow {...p} workouts={day.workouts} history={past} />
   }
 }

@@ -62,6 +62,14 @@ export type Habit = {
   protein?: boolean
   /** tasks only — the category tree, rendered in this order. Omit for a flat list. */
   categories?: Category[]
+  /**
+   * Whether the row carries a button opening its consistency grid — a cell per
+   * day, filled on the days it was done. Only for the kinds whose day is a
+   * yes/no answerable from stored rows alone: toggle, counter, strength and
+   * cardio (see habitHistory). Body weight has its own chart; tasks and food
+   * have no single answer to draw.
+   */
+  history?: boolean
 }
 
 /**
@@ -126,14 +134,21 @@ export const HABITS: Record<UserId, Habit[]> = {
       categories: [{ name: 'Misc', subs: ['Finance', 'Misc'] }],
     },
 
-    { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
-    { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique' },
+    // The five with `history`: the ones worth seeing a run of days for.
+    { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique', history: true },
+    { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique', history: true },
     { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: false },
     { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Physique' },
 
-    { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching' },
-    { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Cardio & Stretching' },
-    { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Cardio & Stretching' },
+    { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching', history: true },
+    {
+      key: 'stretching',
+      title: 'Stretching',
+      kind: 'toggle',
+      section: 'Cardio & Stretching',
+      history: true,
+    },
+    { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Cardio & Stretching', history: true },
 
     { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Family/Partner' },
     { key: 'future_date', title: 'Future Date Planned', kind: 'toggle', section: 'Family/Partner' },

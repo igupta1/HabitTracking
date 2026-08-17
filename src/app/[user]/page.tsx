@@ -7,8 +7,10 @@ import {
   isDone,
   recentWorkoutNames,
   weightHistory,
+  habitHistory,
   type DayData,
   type WeightPoint,
+  type DayMark,
 } from '@/lib/queries'
 import { toDay, formatDay } from '@/lib/day'
 import { HabitRow } from '@/components/rows'
@@ -24,12 +26,14 @@ function Column({
   who,
   day,
   weights,
+  history,
   readOnly,
   names,
 }: {
   who: UserId
   day: DayData
   weights: WeightPoint[]
+  history: Record<string, DayMark[]>
   readOnly?: boolean
   names?: string[]
 }) {
@@ -70,6 +74,7 @@ function Column({
                     readOnly={readOnly}
                     names={names}
                     weights={weights}
+                    history={history}
                   />
                 ))}
             </div>
@@ -92,14 +97,17 @@ export default async function TodayPage({ params }: { params: Promise<{ user: st
   // There is no cron in this app; opening the page is what advances the day.
   await Promise.all([rollOverTasks(me, day), rollOverTasks(them, day)])
 
-  const [mine, theirs, workoutNames, myWeights, theirWeights] = await Promise.all([
-    loadDay(me, day),
-    loadDay(them, day),
-    recentWorkoutNames(me),
-    // Both columns, since the chart opens on either person's weight row.
-    weightHistory(me, day),
-    weightHistory(them, day),
-  ])
+  const [mine, theirs, workoutNames, myWeights, theirWeights, myPast, theirPast] =
+    await Promise.all([
+      loadDay(me, day),
+      loadDay(them, day),
+      recentWorkoutNames(me),
+      // Both columns, since the charts open on either person's rows.
+      weightHistory(me, day),
+      weightHistory(them, day),
+      habitHistory(me, day),
+      habitHistory(them, day),
+    ])
 
   return (
     <main className="mx-auto max-w-5xl px-2 pb-16">
@@ -109,8 +117,8 @@ export default async function TodayPage({ params }: { params: Promise<{ user: st
       </header>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <Column who={me} day={mine} weights={myWeights} names={workoutNames} />
-        <Column who={them} day={theirs} weights={theirWeights} readOnly />
+        <Column who={me} day={mine} weights={myWeights} history={myPast} names={workoutNames} />
+        <Column who={them} day={theirs} weights={theirWeights} history={theirPast} readOnly />
       </div>
     </main>
   )
