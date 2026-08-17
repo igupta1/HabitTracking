@@ -111,7 +111,11 @@ export function Consistency({ user, days }: { user: UserId; days: DayMark[] }) {
               top: at(sel).row * PITCH - 4,
             }}
           >
-            <span className="font-medium">{days[sel].done ? 'Done' : 'Missed'}</span>
+            {/* What was logged, where the day has a name for itself — "Push"
+                says more than "Done" ever did. */}
+            <span className="font-medium">
+              {days[sel].done ? (days[sel].note ?? 'Done') : 'Missed'}
+            </span>
             <span className="ml-1.5 text-neutral-400">{formatDay(days[sel].day)}</span>
           </div>
         )}

@@ -128,6 +128,11 @@ two blank rows. Above it sits the count, "27 of 39 days". No streak: those are
 still deliberately not kept, and a run of cells says the same thing without
 turning one missed day into a zero.
 
+Pointing at a cell reads the day back. On Strength Workout it names the session
+— "Push", "Legs" — since that is the one kind whose day has more to say than
+yes: the name was typed, so it may as well be read. Every other grid says Done
+or Missed, cardio included, where "run" beside a run would add nothing.
+
 Which rows have one is a `history: true` in `src/lib/habits.ts` — currently
 Ishaan's Strength Workout, Creatine, Cardio, Stretching and Wart Pad. It can go
 on any habit whose day is a yes/no answerable from stored rows alone (toggle,

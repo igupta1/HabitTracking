@@ -203,7 +203,8 @@ export async function weightHistory(
     order by day`
 }
 
-export type DayMark = { day: string; done: boolean }
+/** `note` is what was logged that day, where the day has more to say than yes. */
+export type DayMark = { day: string; done: boolean; note?: string }
 
 /** How far back the consistency grid reaches. */
 export const HISTORY_WINDOW_DAYS = 90
@@ -234,13 +235,22 @@ export async function habitHistory(
     sql<{ habit_key: string; day: string; done: boolean; count: number }[]>`
       select habit_key, to_char(day, 'YYYY-MM-DD') as day, done, count from toggles
       where user_id = ${user} and day between ${from}::date and ${day}::date`,
-    sql<{ day: string; mode: string }[]>`
-      select distinct to_char(day, 'YYYY-MM-DD') as day, mode from workouts
+    sql<{ day: string; mode: string; name: string }[]>`
+      select distinct to_char(day, 'YYYY-MM-DD') as day, mode, name from workouts
       where user_id = ${user} and day between ${from}::date and ${day}::date`,
   ])
 
   const marks = new Map(toggles.map((t) => [`${t.habit_key}|${t.day}`, t]))
   const worked = new Set(workouts.map((w) => `${w.mode}|${w.day}`))
+  // What was typed that day, so hovering a strength cell says "Push" rather
+  // than just that something happened. Joined because cardio allows several.
+  const logged = new Map<string, string>()
+  for (const w of workouts) {
+    if (!w.name) continue
+    const k = `${w.mode}|${w.day}`
+    const had = logged.get(k)
+    logged.set(k, had ? `${had} · ${w.name}` : w.name)
+  }
 
   // Nothing recorded in the window means nothing to draw — no grid of blanks.
   const seen = [...toggles, ...workouts].map((r) => r.day).sort()
@@ -259,7 +269,10 @@ export async function habitHistory(
               ? (row?.done ?? false)
               : // strength and cardio, whose kind is also the workout's mode
                 (row?.done ?? worked.has(`${h.kind}|${d}`))
-        return { day: d, done }
+        // Only strength: its name is the session ("Push"), which is the thing
+        // worth reading back. Cardio's would just say "run" beside a run.
+        const note = h.kind === 'strength' ? logged.get(`strength|${d}`) : undefined
+        return { day: d, done, note }
       }),
     ])
   )
