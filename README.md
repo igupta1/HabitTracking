@@ -50,14 +50,14 @@ Per-person differences all live in that config:
 
 - **Task lists** — a user can have several, one per section, each a `tasks`
   habit of its own with its own title, check, count and add form. Ishaan has
-  three, each titled for its own work: **SWE** (Production Operations, TPU
-  Roadmap, Developer Quality of Life, Collaboration, General), **Project**
-  (Outreach, Product) and **Misc** (Finance, Misc). A task says which list it is
-  in by its `category`, which is the list's own name — so each of those three
-  names is a list's, a section's and a row's title at once, and the add form's
-  dropdown only picks the category inside it. Saloni has one, under Career, with
-  no `categories` at all: a flat list with no priorities. Give her some by
-  adding the field.
+  three, each titled for its own work: **SWE**, **Project** and **Misc**
+  (Finance, Misc). A task says which list it is in by its `category`, which is
+  the list's own name — so each of those three names is a list's, a section's
+  and a row's title at once. Only Misc subdivides further; SWE and Project set
+  `subs: []`, which leaves them one run of rows with priority the only sort and
+  the P the only thing to pick when adding. Saloni has one list, under Career,
+  with no `categories` at all — flat, and with no priorities either. Give her
+  some by adding the field.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
@@ -66,23 +66,28 @@ Nothing is lost when the config changes under stored rows. A task filed under a
 category no list claims — or under none at all — collects in the **last** list,
 under a trailing "Other" heading; one whose list still exists but whose
 subcategory has gone collects under an "Other" inside that list. Both appear
-only when they hold something: you drag things out of them, never in.
+only when they hold something: you drag things out of them, never in. A list
+that stops subdividing needs no "Other" at all — with nothing to be outside of,
+its rows simply run together, which is what emptying SWE's and Project's `subs`
+did to the ones filed under the five names they used to have. The stale values
+sit in the column until the next drop rewrites them, and mean nothing meanwhile.
 
-**A subcategory is one consecutive run of rows, sorted P1 first.** No headings
-and no gaps between the priorities — the only thing saying which one a task is
-at is the P on its own row. Inside a run of one priority the order is yours:
-drag a row by its ⠿ grip, or focus the grip and press ↑/↓. New tasks land at the
-bottom, and ticking something off leaves it exactly where you put it.
+**A subcategory — or a whole list, where there are none — is one consecutive
+run of rows, sorted P1 first.** No headings and no gaps between the priorities:
+the only thing saying which one a task is at is the P on its own row. Inside a
+run of one priority the order is yours: drag a row by its ⠿ grip, or focus the
+grip and press ↑/↓. New tasks land at the bottom, and ticking something off
+leaves it exactly where you put it.
 
 **Where you drop a task is what files it.** The subcategory comes from the
-heading it lands under and the priority from the row it lands on top of — drop a
-P1 below a P2 and it *is* a P2 — or, at the top of a subcategory, from the row
-below it. So a list can't come out of order, whatever you do to it, and there is
-no such thing as an invalid place to drop. Dragging alone can't make the first
-P1 in a subcategory that has none, since there is no neighbour to copy; the P
-select on the row does that. Dragging can't cross between lists either — they
-are separate boxes in separate sections. Retype it, or change its category in
-the database.
+heading it lands under, in the lists that have headings, and the priority from
+the row it lands on top of — drop a P1 below a P2 and it *is* a P2 — or, at the
+top of a run, from the row below it. So a list can't come out of order, whatever
+you do to it, and there is no such thing as an invalid place to drop. Dragging
+alone can't make the first P1 in a run that has none, since there is no
+neighbour to copy; the P select on the row does that. Dragging can't cross
+between lists either — they are separate boxes in separate sections. Retype it,
+or change its category in the database.
 
 Empty subcategories appear as drop targets for as long as a drag is in progress
 — that is the only way into one nothing is in yet. The order lives in

@@ -282,12 +282,10 @@ function priorityOf(t: TaskRow): number {
 function groupTasks(tasks: TaskRow[], cats: Category[] | undefined, keepEmpty = false): Group[] {
   if (!cats) return [{ key: '', label: '', subLabel: null, category: null, sub: null, items: tasks }]
 
-  const group = (category: string | null, sub: string | null): Group => ({
+  const group = (category: string | null, sub: string | null, subLabel: string | null): Group => ({
     key: `${category ?? ''}/${sub ?? ''}`,
     label: category ?? 'Other',
-    // Unfiled inside a real category gets an "Other" line of its own; the
-    // unrecognised category has nothing to say below its own heading.
-    subLabel: sub ?? (category ? 'Other' : null),
+    subLabel,
     category,
     sub,
     // Sort is stable, so it only ever moves a row between priorities — the hand
@@ -301,10 +299,14 @@ function groupTasks(tasks: TaskRow[], cats: Category[] | undefined, keepEmpty = 
   })
 
   const groups = cats.flatMap((c) => [
-    ...c.subs.map((s) => group(c.name, s)),
-    group(c.name, null), // filed under the category but under none of its subs
+    ...c.subs.map((s) => group(c.name, s, s)),
+    // Filed under the category but under none of its subs, which earns an
+    // "Other" line of its own — unless the category has no subs at all, where
+    // this one group *is* the list and wears no heading.
+    group(c.name, null, c.subs.length > 0 ? 'Other' : null),
   ])
-  groups.push(group(null, null)) // filed under a category the config has dropped
+  // Filed under a category the config has dropped; nothing to say below it.
+  groups.push(group(null, null, null))
 
   return groups.filter((g) => g.items.length > 0 || (keepEmpty && g.sub !== null))
 }
@@ -349,6 +351,8 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState(cats?.[0]?.name ?? '')
   const [sub, setSub] = useState(cats?.[0]?.subs[0] ?? '')
+  // The subcategories on offer, which follow whichever category is picked.
+  const subs = cats?.find((c) => c.name === category)?.subs ?? []
   const [priority, setPriority] = useState(2)
   const [pending, start] = useTransition()
 
@@ -474,14 +478,24 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         drops the pointer capture and kills the drag halfway through.
       */}
       <div className="mt-1">
-        {groups.flatMap((g, i) => [
+        {groups.flatMap((g, i) => {
+          // A list with one category is named by the section it sits in, so
+          // repeating it here would say nothing. "Other" still needs its line:
+          // it stands for a category the config has dropped.
+          const showCat =
+            !!cats &&
+            (cats.length > 1 || g.category === null) &&
+            g.category !== groups[i - 1]?.category
+
+          return [
           // One heading block per subcategory, carrying its category's name too
           // where it is the first of that category — so the whole block belongs
           // to the group below it, with no dead strip against the category name
           // that would drop into the previous one. It is also the target dragTo
           // measures against. Empty ones only exist mid-drag (see groupTasks),
-          // so nothing stands over an empty box at rest.
-          ...(cats
+          // so nothing stands over an empty box at rest. A list with no
+          // subcategories has nothing to head at all, and gets no block.
+          ...(showCat || g.subLabel
             ? [
                 <div
                   key={`head:${g.key}`}
@@ -491,17 +505,11 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
                   }}
                   className="pl-12 pr-4 pt-1.5"
                 >
-                  {/*
-                    A list with one category is named by the section it sits in,
-                    so repeating it here would say nothing. "Other" still needs
-                    its line: it stands for a category the config has dropped.
-                  */}
-                  {(cats.length > 1 || g.category === null) &&
-                    g.category !== groups[i - 1]?.category && (
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                        {g.label}
-                      </p>
-                    )}
+                  {showCat && (
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                      {g.label}
+                    </p>
+                  )}
                   {g.subLabel && <p className="text-[10px] text-neutral-600">{g.subLabel}</p>}
                 </div>,
               ]
@@ -576,7 +584,8 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
               {!readOnly && <X onClick={() => start(() => deleteRow(user, 'tasks', t.id))} />}
             </div>
           )),
-        ])}
+          ]
+        })}
       </div>
 
       {!readOnly && (
@@ -631,18 +640,21 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
                   ))}
                 </select>
               )}
-              <select
-                value={sub}
-                onChange={(e) => setSub(e.target.value)}
-                className="min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
-                aria-label="Subcategory"
-              >
-                {(cats.find((c) => c.name === category)?.subs ?? []).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+              {/* A list with no subcategories leaves only the P to pick. */}
+              {subs.length > 0 && (
+                <select
+                  value={sub}
+                  onChange={(e) => setSub(e.target.value)}
+                  className="min-w-0 rounded-lg bg-neutral-800 px-2 py-1.5 text-sm outline-none"
+                  aria-label="Subcategory"
+                >
+                  {subs.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              )}
               <Priority value={priority} onChange={setPriority} />
             </div>
           )}

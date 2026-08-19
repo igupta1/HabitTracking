@@ -102,18 +102,8 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'SWE',
       kind: 'tasks',
       section: 'SWE',
-      categories: [
-        {
-          name: 'SWE',
-          subs: [
-            'Production Operations',
-            'TPU Roadmap',
-            'Developer Quality of Life',
-            'Collaboration',
-            'General',
-          ],
-        },
-      ],
+      // No subcategories: the list is one run of rows, priority the only sort.
+      categories: [{ name: 'SWE', subs: [] }],
     },
 
     {
@@ -121,7 +111,7 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'Project',
       kind: 'tasks',
       section: 'Project',
-      categories: [{ name: 'Project', subs: ['Outreach', 'Product'] }],
+      categories: [{ name: 'Project', subs: [] }],
     },
     { key: 'review_gate', title: 'Review Gate', kind: 'toggle', section: 'Project' },
 
