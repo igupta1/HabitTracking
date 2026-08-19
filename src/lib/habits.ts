@@ -102,7 +102,9 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'SWE',
       kind: 'tasks',
       section: 'SWE',
-      // No subcategories: the list is one run of rows, priority the only sort.
+      // No subcategories anywhere now: each list is one run of rows, priority
+      // the only sort. The machinery is still there — a `subs` back in any of
+      // the three brings its headings back with it.
       categories: [{ name: 'SWE', subs: [] }],
     },
 
@@ -121,7 +123,7 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'Misc',
       kind: 'tasks',
       section: 'Misc',
-      categories: [{ name: 'Misc', subs: ['Finance', 'Misc'] }],
+      categories: [{ name: 'Misc', subs: [] }],
     },
 
     // The five with `history`: the ones worth seeing a run of days for.

@@ -50,14 +50,15 @@ Per-person differences all live in that config:
 
 - **Task lists** — a user can have several, one per section, each a `tasks`
   habit of its own with its own title, check, count and add form. Ishaan has
-  three, each titled for its own work: **SWE**, **Project** and **Misc**
-  (Finance, Misc). A task says which list it is in by its `category`, which is
-  the list's own name — so each of those three names is a list's, a section's
-  and a row's title at once. Only Misc subdivides further; SWE and Project set
-  `subs: []`, which leaves them one run of rows with priority the only sort and
-  the P the only thing to pick when adding. Saloni has one list, under Career,
-  with no `categories` at all — flat, and with no priorities either. Give her
-  some by adding the field.
+  three, each titled for its own work: **SWE**, **Project** and **Misc**. A task
+  says which list it is in by its `category`, which is the list's own name — so
+  each of those three names is a list's, a section's and a row's title at once.
+  None of them subdivides: all three set `subs: []`, which leaves each one run
+  of rows with priority the only sort and the P the only thing to pick when
+  adding. The machinery is still there — a `subs` back in any of them brings
+  its headings back with it. Saloni has one list, under Career, with no
+  `categories` at all — flat, and with no priorities either. Give her some by
+  adding the field.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
@@ -67,10 +68,12 @@ category no list claims — or under none at all — collects in the **last** li
 under a trailing "Other" heading; one whose list still exists but whose
 subcategory has gone collects under an "Other" inside that list. Both appear
 only when they hold something: you drag things out of them, never in. A list
-that stops subdividing needs no "Other" at all — with nothing to be outside of,
-its rows simply run together, which is what emptying SWE's and Project's `subs`
-did to the ones filed under the five names they used to have. The stale values
-sit in the column until the next drop rewrites them, and mean nothing meanwhile.
+that stops subdividing needs no inner "Other" at all — with nothing to be
+outside of, its rows simply run together, which is what emptying `subs` did to
+everything that had been filed under the seven names the three lists used to
+carry. Those values sit in the column until the next drop rewrites them, and
+mean nothing meanwhile. The last list keeps its outer "Other" either way: that
+one is for tasks belonging to no list at all.
 
 **A subcategory — or a whole list, where there are none — is one consecutive
 run of rows, sorted P1 first.** No headings and no gaps between the priorities:
