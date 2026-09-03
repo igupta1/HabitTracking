@@ -59,6 +59,9 @@ create table if not exists food (
   text       text not null,
   calories   int,                             -- only shown for Saloni
   protein_g  int,                             -- likewise, in grams
+  -- 'red' | 'yellow' | 'green', set by tapping the swatch after logging the
+  -- entry. Null until it is rated, which is most of them.
+  rating     text,
   created_at timestamptz not null default now()
 );
 create index if not exists food_user_day on food (user_id, day);
@@ -66,6 +69,7 @@ create index if not exists food_user_day on food (user_id, day);
 -- Added after the first deploy, like tasks.sort_order above; src/lib/queries.ts
 -- runs it once per process so a fresh push doesn't need a SQL console.
 alter table food add column if not exists protein_g int;
+alter table food add column if not exists rating text;
 
 create table if not exists weights (
   user_id text not null,

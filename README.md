@@ -62,6 +62,8 @@ Per-person differences all live in that config:
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
+- **Food ratings** — only on Ishaan's food log (`ratings: true`). Each entry
+  carries a dot you tap to cycle it unrated → green → yellow → red → unrated.
 
 Nothing is lost when the config changes under stored rows. A task filed under a
 category no list claims — or under none at all — collects in the **last** list,
@@ -116,7 +118,10 @@ than app logic. Delete the logged one to change it. Cardio is unrestricted.
 
 Food entries are always-editable inputs that save on blur — clearing the text
 deletes the entry. Saloni's log totals its calories and protein in a row at the
-bottom.
+bottom. Ishaan's carries a traffic light instead: one tap on an entry's dot
+cycles it through green, yellow and red and back to unrated, so a day's log gets
+colour-coded in one pass down the column. The colour shows on the partner view
+too, as a dot that stays faint until it is set.
 
 **Body weight has a chart.** The small trend button on either person's weight
 row — yours or theirs — opens a line of date vs lbs for the last 90 days, drawn
@@ -184,8 +189,8 @@ Schema changes: edit `schema.sql`, re-run `npm run db:init` (which is just
 column still means writing the `alter table` yourself. Against Neon, paste
 `schema.sql` into their SQL editor instead.
 
-`tasks.sort_order`, `tasks.subcategory` and `food.protein_g` are the exceptions:
-all three were added after the app was deployed, so `src/lib/queries.ts` runs
+`tasks.sort_order`, `tasks.subcategory`, `food.protein_g` and `food.rating` are
+the exceptions: all four were added after the app was deployed, so `src/lib/queries.ts` runs
 the same idempotent `alter table` statements once per server process, before the
 first read. Two carry a backfill beside them — `sort_order` numbering the rows
 that had none, and `subcategory` catching the four names that spent one deploy

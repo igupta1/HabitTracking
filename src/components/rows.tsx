@@ -11,13 +11,22 @@ import {
   toggleTask,
   addFood,
   updateFood,
+  setFoodRating,
   setWeight,
   logStrength,
   logCardio,
   deleteRow,
 } from '@/actions'
 import type { DayData, TaskRow, FoodRow, WorkoutRow, WeightPoint, DayMark } from '@/lib/queries'
-import { filing, ownsTask, type Category, type Habit, type UserId } from '@/lib/habits'
+import {
+  filing,
+  ownsTask,
+  FOOD_RATINGS,
+  type Category,
+  type FoodRating,
+  type Habit,
+  type UserId,
+} from '@/lib/habits'
 import { WeightChart } from './weight-chart'
 import { Consistency } from './consistency'
 
@@ -666,17 +675,73 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
 
 // ---------------------------------------------------------------- food
 
+/** The dot's fill, by rating. Written out so Tailwind sees each class name. */
+const RATING_FILL: Record<FoodRating, string> = {
+  green: 'border-emerald-400 bg-emerald-400',
+  yellow: 'border-amber-400 bg-amber-400',
+  red: 'border-rose-500 bg-rose-500',
+}
+
+/** Unrated: a ring only, faint in the read-only view so it stays out of the way. */
+function ratingClass(rating: FoodRating | null, readOnly?: boolean): string {
+  if (rating) return RATING_FILL[rating]
+  return readOnly ? 'border-neutral-800' : 'border-neutral-600'
+}
+
+/**
+ * The traffic light on a food entry. One tap cycles unrated → green → yellow →
+ * red → unrated, rather than opening a picker: rating is something you do to a
+ * whole day's log in one pass, and the colour you want is never more than three
+ * taps away. Kept the same size and place whether or not it's set, so a column
+ * of entries reads down the page.
+ */
+function RatingSwatch({
+  user,
+  entry,
+  readOnly,
+}: {
+  user: UserId
+  entry: FoodRow
+  readOnly?: boolean
+}) {
+  const [rating, setRating] = useState(entry.rating)
+  const [, start] = useTransition()
+  const dot = `h-4 w-4 shrink-0 rounded-full border ${ratingClass(rating, readOnly)}`
+
+  if (readOnly) return <span className={dot} aria-hidden />
+
+  const cycle: (FoodRating | null)[] = [null, ...FOOD_RATINGS]
+  const next = cycle[(cycle.indexOf(rating) + 1) % cycle.length]
+
+  // The dot is 16px; the button around it is 32, bled into the padding either
+  // side so the target is thumb-sized without moving anything.
+  return (
+    <button
+      onClick={() => {
+        setRating(next)
+        start(() => setFoodRating(user, entry.id, next))
+      }}
+      className="tap -mx-2 grid h-8 w-8 shrink-0 place-items-center"
+      aria-label={`${entry.text}: ${rating ?? 'unrated'}. Change to ${next ?? 'unrated'}`}
+    >
+      <span className={dot} />
+    </button>
+  )
+}
+
 /** Always-editable, saving on blur — no separate edit mode. */
 function FoodEntry({
   user,
   entry,
   showCalories,
   showProtein,
+  showRating,
 }: {
   user: UserId
   entry: FoodRow
   showCalories?: boolean
   showProtein?: boolean
+  showRating?: boolean
 }) {
   const [text, setText] = useState(entry.text)
   const [cal, setCal] = useState(entry.calories != null ? String(entry.calories) : '')
@@ -692,7 +757,12 @@ function FoodEntry({
   }
 
   return (
-    <div className={`flex items-center gap-2 py-1 pl-12 pr-4 ${pending ? 'opacity-50' : ''}`}>
+    <div
+      className={`flex items-center gap-2 py-1 pr-4 ${showRating ? 'pl-6' : 'pl-12'} ${
+        pending ? 'opacity-50' : ''
+      }`}
+    >
+      {showRating && <RatingSwatch user={user} entry={entry} />}
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -755,12 +825,22 @@ function FoodRowGroup({
       <div className="mt-1">
         {entries.map((e) =>
           readOnly ? (
-            <div key={e.id} className="py-1.5 pl-12 pr-4 text-sm">
-              {e.text}
-              {e.calories != null && <span className="ml-2 text-neutral-500">{e.calories} cal</span>}
-              {e.protein_g != null && (
-                <span className="ml-2 text-neutral-500">{e.protein_g} g</span>
-              )}
+            <div
+              key={e.id}
+              className={`flex items-center gap-2 py-1.5 pr-4 text-sm ${
+                habit.ratings ? 'pl-6' : 'pl-12'
+              }`}
+            >
+              {habit.ratings && <RatingSwatch user={user} entry={e} readOnly />}
+              <span>
+                {e.text}
+                {e.calories != null && (
+                  <span className="ml-2 text-neutral-500">{e.calories} cal</span>
+                )}
+                {e.protein_g != null && (
+                  <span className="ml-2 text-neutral-500">{e.protein_g} g</span>
+                )}
+              </span>
             </div>
           ) : (
             <FoodEntry
@@ -769,6 +849,7 @@ function FoodRowGroup({
               entry={e}
               showCalories={habit.calories}
               showProtein={habit.protein}
+              showRating={habit.ratings}
             />
           )
         )}

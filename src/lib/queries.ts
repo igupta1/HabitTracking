@@ -1,5 +1,5 @@
 import { sql } from '@/db'
-import { habitsFor, ownsTask, type Habit, type UserId } from './habits'
+import { habitsFor, ownsTask, type FoodRating, type Habit, type UserId } from './habits'
 import { toDay, shiftDay, daysFrom } from './day'
 
 export type TaskRow = {
@@ -10,11 +10,13 @@ export type TaskRow = {
   subcategory: string | null
   priority: number | null
 }
+
 export type FoodRow = {
   id: string
   text: string
   calories: number | null
   protein_g: number | null
+  rating: FoodRating | null
 }
 export type WorkoutRow = {
   id: string
@@ -34,7 +36,8 @@ export type DayData = {
 }
 
 /**
- * `tasks.sort_order`, `tasks.subcategory` and `food.protein_g` all arrived
+ * `tasks.sort_order`, `tasks.subcategory`, `food.protein_g` and `food.rating`
+ * all arrived
  * after the app was already deployed, and the only way to reach the hosted
  * database is a SQL console. Rather than make a schema edit a manual step, the
  * same idempotent statements from schema.sql run once per server process,
@@ -60,6 +63,8 @@ function ensureColumns(): Promise<void> {
                          'Developer Quality of Life', 'Collaboration')`
     // No backfill: entries logged before protein tracking simply have none.
     await sql`alter table food add column if not exists protein_g int`
+    // Likewise for the traffic light — everything logged before it is unrated.
+    await sql`alter table food add column if not exists rating text`
   })().catch((e) => {
     migrated = undefined // a cold-start timeout shouldn't poison every later load
     throw e
@@ -110,7 +115,7 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
       where user_id = ${user} and day = ${day}
       order by sort_order nulls last, created_at`,
     sql<FoodRow[]>`
-      select id, text, calories, protein_g from food
+      select id, text, calories, protein_g, rating from food
       where user_id = ${user} and day = ${day} order by created_at`,
     sql<{ lbs: number }[]>`
       select lbs from weights where user_id = ${user} and day = ${day}`,

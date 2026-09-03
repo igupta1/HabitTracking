@@ -3,7 +3,16 @@
 import { revalidatePath } from 'next/cache'
 import { sql } from '@/db'
 import { toDay } from '@/lib/day'
-import { habit, keyOfKind, isUserId, filing, type HabitKind, type UserId } from '@/lib/habits'
+import {
+  habit,
+  keyOfKind,
+  isUserId,
+  filing,
+  isFoodRating,
+  type FoodRating,
+  type HabitKind,
+  type UserId,
+} from '@/lib/habits'
 
 /**
  * There is no login: identity is the `/ishaan` or `/saloni` path, and every
@@ -256,6 +265,19 @@ export async function updateFood(
       set text = ${t}, calories = ${amount(calories)}, protein_g = ${amount(proteinG)}
       where id = ${id}`
   }
+  refresh()
+}
+
+/**
+ * The traffic light on an entry, set by tapping its swatch. Passing null clears
+ * it back to unrated, which is where the cycle ends up after red.
+ */
+export async function setFoodRating(u: string, id: string, rating: FoodRating | null) {
+  const user = check(u)
+  if (rating !== null && !isFoodRating(rating)) return
+  if (!(await ownsRow('food', id, user))) return
+
+  await sql`update food set rating = ${rating} where id = ${id}`
   refresh()
 }
 

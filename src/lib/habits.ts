@@ -46,6 +46,17 @@ export const SECTIONS = [
 ] as const
 export type Section = (typeof SECTIONS)[number]
 
+/**
+ * How an entry ate: the traffic light tapped onto it after it is logged, on the
+ * food rows whose habit asks for one. Also the order the swatch cycles in.
+ */
+export const FOOD_RATINGS = ['green', 'yellow', 'red'] as const
+export type FoodRating = (typeof FOOD_RATINGS)[number]
+
+export function isFoodRating(v: unknown): v is FoodRating {
+  return FOOD_RATINGS.includes(v as FoodRating)
+}
+
 /** A task category and the subcategories it holds, both drawn in this order. */
 export type Category = { name: string; subs: string[] }
 
@@ -60,6 +71,8 @@ export type Habit = {
   calories?: boolean
   /** food only — whether to show the protein field, in grams */
   protein?: boolean
+  /** food only — whether each entry carries a red/yellow/green swatch */
+  ratings?: boolean
   /** tasks only — the category tree, rendered in this order. Omit for a flat list. */
   categories?: Category[]
   /**
@@ -129,7 +142,7 @@ export const HABITS: Record<UserId, Habit[]> = {
     // The five with `history`: the ones worth seeing a run of days for.
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique', history: true },
     { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique', history: true },
-    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: false },
+    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: false, ratings: true },
     { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Physique' },
 
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching', history: true },
