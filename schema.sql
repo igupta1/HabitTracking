@@ -52,6 +52,13 @@ update tasks set subcategory = category, category = 'SWE'
   where category in ('Production Operations', 'TPU Roadmap',
                      'Developer Quality of Life', 'Collaboration');
 
+-- SWE and Project each split into In Progress / Blocked. Everything already in
+-- them predates the split, so it all starts as In Progress rather than falling
+-- into "Other".
+update tasks set subcategory = 'In Progress'
+  where category in ('SWE', 'Project')
+    and (subcategory is null or subcategory not in ('In Progress', 'Blocked'));
+
 create table if not exists food (
   id         uuid primary key default gen_random_uuid(),
   user_id    text not null,

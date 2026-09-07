@@ -519,7 +519,21 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
                       {g.label}
                     </p>
                   )}
-                  {g.subLabel && <p className="text-[10px] text-neutral-600">{g.subLabel}</p>}
+                  {/* Second line under a category name, but the heading itself
+                      where the category has none to show — so it takes the
+                      category's weight when it is the only thing standing over
+                      the rows. */}
+                  {g.subLabel && (
+                    <p
+                      className={
+                        showCat
+                          ? 'text-[10px] text-neutral-600'
+                          : 'text-[10px] font-medium uppercase tracking-wide text-neutral-500'
+                      }
+                    >
+                      {g.subLabel}
+                    </p>
+                  )}
                 </div>,
               ]
             : []),

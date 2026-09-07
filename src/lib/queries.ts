@@ -61,6 +61,15 @@ function ensureColumns(): Promise<void> {
       update tasks set subcategory = category, category = 'SWE'
       where category in ('Production Operations', 'TPU Roadmap',
                          'Developer Quality of Life', 'Collaboration')`
+    // SWE and Project each split into In Progress / Blocked. Everything already
+    // in them predates the split — including the four subcategories above, long
+    // since dropped from the config — so it all starts as In Progress rather
+    // than falling into "Other". Self-healing: those two are the only
+    // subcategories the config now recognises, so this settles after one pass.
+    await sql`
+      update tasks set subcategory = 'In Progress'
+      where category in ('SWE', 'Project')
+        and (subcategory is null or subcategory not in ('In Progress', 'Blocked'))`
     // No backfill: entries logged before protein tracking simply have none.
     await sql`alter table food add column if not exists protein_g int`
     // Likewise for the traffic light — everything logged before it is unrated.

@@ -57,6 +57,14 @@ export function isFoodRating(v: unknown): v is FoodRating {
   return FOOD_RATINGS.includes(v as FoodRating)
 }
 
+/**
+ * The two states a SWE or Project task can be in, drawn as headings in this
+ * order. Stored in tasks.subcategory, so they are subcategories as far as the
+ * filing, the drag and both writes are concerned — nothing else knows they
+ * mean anything special.
+ */
+export const TASK_STATES = ['In Progress', 'Blocked']
+
 /** A task category and the subcategories it holds, both drawn in this order. */
 export type Category = { name: string; subs: string[] }
 
@@ -115,10 +123,11 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'SWE',
       kind: 'tasks',
       section: 'SWE',
-      // No subcategories anywhere now: each list is one run of rows, priority
-      // the only sort. The machinery is still there — a `subs` back in any of
-      // the three brings its headings back with it.
-      categories: [{ name: 'SWE', subs: [] }],
+      // Two runs of rows rather than one: what is being worked on, and what is
+      // waiting on someone else. Each is sorted on its own — priority first,
+      // hand order inside a priority — and dragging a task across the heading
+      // is what moves it between them. Misc stays a single flat list.
+      categories: [{ name: 'SWE', subs: TASK_STATES }],
     },
 
     {
@@ -126,7 +135,7 @@ export const HABITS: Record<UserId, Habit[]> = {
       title: 'Project',
       kind: 'tasks',
       section: 'Project',
-      categories: [{ name: 'Project', subs: [] }],
+      categories: [{ name: 'Project', subs: TASK_STATES }],
     },
     { key: 'review_gate', title: 'Review Gate', kind: 'toggle', section: 'Project' },
 

@@ -53,12 +53,13 @@ Per-person differences all live in that config:
   three, each titled for its own work: **SWE**, **Project** and **Misc**. A task
   says which list it is in by its `category`, which is the list's own name — so
   each of those three names is a list's, a section's and a row's title at once.
-  None of them subdivides: all three set `subs: []`, which leaves each one run
-  of rows with priority the only sort and the P the only thing to pick when
-  adding. The machinery is still there — a `subs` back in any of them brings
-  its headings back with it. Saloni has one list, under Career, with no
-  `categories` at all — flat, and with no priorities either. Give her some by
-  adding the field.
+  SWE and Project each split in two — **In Progress** and **Blocked**, the
+  `TASK_STATES` both their `subs` point at — so each is two runs of rows under a
+  heading apiece, and dragging a task across the heading is what moves it
+  between them. Misc doesn't subdivide: `subs: []` leaves it one run of rows
+  with priority the only sort and the P the only thing to pick when adding.
+  Saloni has one list, under Career, with no `categories` at all — flat, and
+  with no priorities either. Give her some by adding the field.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
@@ -71,11 +72,9 @@ under a trailing "Other" heading; one whose list still exists but whose
 subcategory has gone collects under an "Other" inside that list. Both appear
 only when they hold something: you drag things out of them, never in. A list
 that stops subdividing needs no inner "Other" at all — with nothing to be
-outside of, its rows simply run together, which is what emptying `subs` did to
-everything that had been filed under the seven names the three lists used to
-carry. Those values sit in the column until the next drop rewrites them, and
-mean nothing meanwhile. The last list keeps its outer "Other" either way: that
-one is for tasks belonging to no list at all.
+outside of, its rows simply run together, which is what emptying `subs` does to
+everything filed under a name it has dropped. The last list keeps its outer
+"Other" either way: that one is for tasks belonging to no list at all.
 
 **A subcategory — or a whole list, where there are none — is one consecutive
 run of rows, sorted P1 first.** No headings and no gaps between the priorities:
@@ -92,7 +91,10 @@ you do to it, and there is no such thing as an invalid place to drop. Dragging
 alone can't make the first P1 in a run that has none, since there is no
 neighbour to copy; the P select on the row does that. Dragging can't cross
 between lists either — they are separate boxes in separate sections. Retype it,
-or change its category in the database.
+or change its category in the database. Within SWE or Project, though, In
+Progress and Blocked are two headings in one list, so a task moves between them
+by drag like any other filing — and takes the priority of whatever it lands on
+when it gets there.
 
 Empty subcategories appear as drop targets for as long as a drag is in progress
 — that is the only way into one nothing is in yet. The order lives in
@@ -195,8 +197,12 @@ the same idempotent `alter table` statements once per server process, before the
 first read. Two carry a backfill beside them — `sort_order` numbering the rows
 that had none, and `subcategory` catching the four names that spent one deploy
 as top-level categories and moving them under SWE. Both match nothing on the
-second run. That is all there so a push goes live on its own; it isn't a
-migration system, and the next column shouldn't grow one without a reason.
+second run. A third statement settles rather than runs out: everything in SWE
+or Project not already In Progress or Blocked becomes **In Progress**, which
+catches both the rows that predate the split and any stale subcategory left in
+the column, and matches nothing once those are the only two names in use. That
+is all there so a push goes live on its own; it isn't a migration system, and
+the next column shouldn't grow one without a reason.
 
 ## Deploying to Vercel
 
