@@ -479,9 +479,14 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
       <div className="flex items-center gap-3 px-4 pt-3">
         <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
-        <span className="tabular-nums text-sm text-neutral-400">
-          {checks ? `${doneCount}/${items.length}` : items.length}
-        </span>
+        {/* Nothing to count on a list you finish by deleting: a bare total is
+            the length of the list you are already looking at. Where the tasks
+            do tick off it still says how far through you are. */}
+        {checks && (
+          <span className="tabular-nums text-sm text-neutral-400">
+            {doneCount}/{items.length}
+          </span>
+        )}
       </div>
 
       {readOnly && tasks.length === 0 && (

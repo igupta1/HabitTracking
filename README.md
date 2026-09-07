@@ -63,11 +63,12 @@ Per-person differences all live in that config:
   with no priorities either. Give her some by adding the field.
 - **Task checks** — all three of Ishaan's lists set `checks: false`, which
   takes the check off every task in them: you finish one by hitting its ✕, so
-  there is no done task to draw. The count beside the list title is a plain
-  total rather than `done/total`, and the list's own check goes back to being a
-  manual toggle — with nothing written down, there is nothing for the day's
-  score to read (see `impliedByData`). Saloni's list omits the flag and keeps
-  its checks.
+  there is no done task to draw. The `done/total` beside the list title goes
+  with them — a bare total counts the rows you are already looking at — and the
+  list's own check goes back to being a manual toggle, since with nothing
+  written down there is nothing for the day's score to read (see
+  `impliedByData`). Saloni's list omits the flag and keeps both its checks and
+  its count.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
