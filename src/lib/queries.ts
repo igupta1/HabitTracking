@@ -70,6 +70,11 @@ function ensureColumns(): Promise<void> {
       update tasks set subcategory = 'In Progress'
       where category in ('SWE', 'Project')
         and (subcategory is null or subcategory not in ('In Progress', 'Blocked'))`
+    // 'Misc' spelled out. The name is a list's, a section's and a row's title
+    // at once, and it is also what every task in the list stores as its
+    // category — so renaming it in the config is a write, not a relabel.
+    // Without this they would all fall to the catch-all list's "Other".
+    await sql`update tasks set category = 'Miscellaneous' where category = 'Misc'`
     // No backfill: entries logged before protein tracking simply have none.
     await sql`alter table food add column if not exists protein_g int`
     // Likewise for the traffic light — everything logged before it is unrated.
@@ -155,6 +160,10 @@ function impliedByData(user: UserId, h: Habit, d: DayData): boolean {
     case 'weight':
       return d.weight !== null
     case 'tasks': {
+      // Nothing to read off a list whose tasks carry no check: finishing one
+      // deletes it, so "done" is never written down anywhere. The row's own
+      // check stays, as a plain manual toggle.
+      if (h.checks === false) return false
       // Each list is judged on its own rows, so clearing SWE says nothing about
       // Project — they are separate habits with separate checks.
       const mine = d.tasks.filter((t) => ownsTask(user, h, t))

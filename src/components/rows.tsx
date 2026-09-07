@@ -224,9 +224,14 @@ function Priority({ value, onChange }: { value: number; onChange: (v: number) =>
   )
 }
 
-/** Crossed off wins over the P1 red — it's finished, not urgent. */
-function taskTone(t: TaskRow) {
-  if (t.done) return 'text-neutral-500 line-through'
+/**
+ * Crossed off wins over the P1 red — it's finished, not urgent. Where the list
+ * carries no checks there is no finishing a task, so a `done` left in the
+ * column by an older row says nothing and is not drawn: it would strike a line
+ * through a task with nothing to clear it but the ✕.
+ */
+function taskTone(t: TaskRow, checks = true) {
+  if (checks && t.done) return 'text-neutral-500 line-through'
   return t.priority === 1 ? 'text-red-400' : ''
 }
 
@@ -234,7 +239,7 @@ function taskTone(t: TaskRow) {
  * Always-editable title, saving on blur, like FoodEntry. Because the text is an
  * input, the check is what you tap to complete a task — not the whole line.
  */
-function TaskTitle({ user, task }: { user: UserId; task: TaskRow }) {
+function TaskTitle({ user, task, checks }: { user: UserId; task: TaskRow; checks?: boolean }) {
   const [text, setText] = useState(task.title)
   const [pending, start] = useTransition()
 
@@ -253,7 +258,8 @@ function TaskTitle({ user, task }: { user: UserId; task: TaskRow }) {
       onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
       aria-label={`Rename ${task.title}`}
       className={`-mr-1 min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 outline-none focus:bg-neutral-800 ${taskTone(
-        task
+        task,
+        checks
       )} ${pending ? 'opacity-50' : ''}`}
     />
   )
@@ -357,6 +363,8 @@ function Grip(props: React.ComponentProps<'button'>) {
 
 function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]; done: boolean }) {
   const cats = habit.categories
+  // Lists you finish by deleting have nothing to tick; see Habit.checks.
+  const checks = habit.checks !== false
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState(cats?.[0]?.name ?? '')
   const [sub, setSub] = useState(cats?.[0]?.subs[0] ?? '')
@@ -472,7 +480,7 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
         <CheckButton user={user} habit={habit} done={done} readOnly={readOnly} />
         <span className="flex-1 font-medium">{habit.title}</span>
         <span className="tabular-nums text-sm text-neutral-400">
-          {doneCount}/{items.length}
+          {checks ? `${doneCount}/${items.length}` : items.length}
         </span>
       </div>
 
@@ -550,8 +558,8 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
             >
               {readOnly ? (
                 <div className="flex flex-1 items-center gap-3">
-                  <Check on={t.done} />
-                  <span className={taskTone(t)}>{t.title}</span>
+                  {checks && <Check on={t.done} />}
+                  <span className={taskTone(t, checks)}>{t.title}</span>
                 </div>
               ) : (
                 <>
@@ -577,14 +585,16 @@ function TasksRow({ user, habit, readOnly, tasks, done }: P & { tasks: TaskRow[]
                       nudge(t.id, d)
                     }}
                   />
-                  <button
-                    onClick={() => start(() => toggleTask(user, habit.key, t.id))}
-                    className="tap shrink-0"
-                    aria-label={`Mark ${t.title} ${t.done ? 'not done' : 'done'}`}
-                  >
-                    <Check on={t.done} />
-                  </button>
-                  <TaskTitle key={t.title} user={user} task={t} />
+                  {checks && (
+                    <button
+                      onClick={() => start(() => toggleTask(user, habit.key, t.id))}
+                      className="tap shrink-0"
+                      aria-label={`Mark ${t.title} ${t.done ? 'not done' : 'done'}`}
+                    >
+                      <Check on={t.done} />
+                    </button>
+                  )}
+                  <TaskTitle key={t.title} user={user} task={t} checks={checks} />
                 </>
               )}
               {cats &&

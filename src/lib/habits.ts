@@ -38,7 +38,7 @@ export const SECTIONS = [
   'Career',
   'SWE',
   'Project',
-  'Misc',
+  'Miscellaneous',
   'Physique',
   'Cardio & Stretching',
   'Family/Partner',
@@ -84,6 +84,14 @@ export type Habit = {
   /** tasks only — the category tree, rendered in this order. Omit for a flat list. */
   categories?: Category[]
   /**
+   * tasks only — whether each task carries a check of its own. Default true.
+   * `false` where finishing a task means deleting it: the ✕ is the only way off
+   * the list, so there is no such thing as a done task to draw a check for, and
+   * the row's own check goes back to being a plain manual toggle (see
+   * impliedByData).
+   */
+  checks?: boolean
+  /**
    * Whether the row carries a button opening its consistency grid — a cell per
    * day, filled on the days it was done. Only for the kinds whose day is a
    * yes/no answerable from stored rows alone: toggle, counter, strength and
@@ -126,8 +134,10 @@ export const HABITS: Record<UserId, Habit[]> = {
       // Two runs of rows rather than one: what is being worked on, and what is
       // waiting on someone else. Each is sorted on its own — priority first,
       // hand order inside a priority — and dragging a task across the heading
-      // is what moves it between them. Misc stays a single flat list.
+      // is what moves it between them. Miscellaneous stays a single flat list.
       categories: [{ name: 'SWE', subs: TASK_STATES }],
+      // All three of Ishaan's lists are ✕-to-finish; only Saloni's ticks off.
+      checks: false,
     },
 
     {
@@ -136,16 +146,18 @@ export const HABITS: Record<UserId, Habit[]> = {
       kind: 'tasks',
       section: 'Project',
       categories: [{ name: 'Project', subs: TASK_STATES }],
+      checks: false,
     },
     { key: 'review_gate', title: 'Review Gate', kind: 'toggle', section: 'Project' },
 
     // Last of the three, so it is also the catch-all — see ownsTask.
     {
       key: 'tasks_misc',
-      title: 'Misc',
+      title: 'Miscellaneous',
       kind: 'tasks',
-      section: 'Misc',
-      categories: [{ name: 'Misc', subs: [] }],
+      section: 'Miscellaneous',
+      categories: [{ name: 'Miscellaneous', subs: [] }],
+      checks: false,
     },
 
     // The five with `history`: the ones worth seeing a run of days for.
@@ -213,8 +225,8 @@ export function taskLists(user: UserId): Habit[] {
 
 /**
  * Whether a task belongs to this list. A task says which list it is in by the
- * category it is filed under — 'SWE', 'Project', 'Misc' — which is why those
- * names are both a list's own and a section's.
+ * category it is filed under — 'SWE', 'Project', 'Miscellaneous' — which is
+ * why those names are both a list's own and a section's.
  *
  * The last list is the catch-all: a task filed under a category no list claims,
  * or under none at all, lands there rather than vanishing off the page. For

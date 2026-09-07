@@ -59,6 +59,10 @@ update tasks set subcategory = 'In Progress'
   where category in ('SWE', 'Project')
     and (subcategory is null or subcategory not in ('In Progress', 'Blocked'));
 
+-- 'Misc' spelled out. The category is stored on every task in the list, so the
+-- rename is a write rather than a relabel.
+update tasks set category = 'Miscellaneous' where category = 'Misc';
+
 create table if not exists food (
   id         uuid primary key default gen_random_uuid(),
   user_id    text not null,

@@ -50,16 +50,24 @@ Per-person differences all live in that config:
 
 - **Task lists** — a user can have several, one per section, each a `tasks`
   habit of its own with its own title, check, count and add form. Ishaan has
-  three, each titled for its own work: **SWE**, **Project** and **Misc**. A task
+  three, each titled for its own work: **SWE**, **Project** and
+  **Miscellaneous**. A task
   says which list it is in by its `category`, which is the list's own name — so
   each of those three names is a list's, a section's and a row's title at once.
   SWE and Project each split in two — **In Progress** and **Blocked**, the
   `TASK_STATES` both their `subs` point at — so each is two runs of rows under a
   heading apiece, and dragging a task across the heading is what moves it
-  between them. Misc doesn't subdivide: `subs: []` leaves it one run of rows
+  between them. Miscellaneous doesn't subdivide: `subs: []` leaves it one run of rows
   with priority the only sort and the P the only thing to pick when adding.
   Saloni has one list, under Career, with no `categories` at all — flat, and
   with no priorities either. Give her some by adding the field.
+- **Task checks** — all three of Ishaan's lists set `checks: false`, which
+  takes the check off every task in them: you finish one by hitting its ✕, so
+  there is no done task to draw. The count beside the list title is a plain
+  total rather than `done/total`, and the list's own check goes back to being a
+  manual toggle — with nothing written down, there is nothing for the day's
+  score to read (see `impliedByData`). Saloni's list omits the flag and keeps
+  its checks.
 - **Calories and protein** — only shown on Saloni's food log (`calories: true`,
   `protein: true`). Either flag can stand on its own; the daily total row shows
   whichever are on.
@@ -105,7 +113,10 @@ A task list counts as done once every **P1** in *that list* is done, even
 with P2/P3 left over — clearing the must-dos is the bar. With no P1s on the list
 (always the case for Saloni, who has no priorities) it falls back to needing
 everything done. Each list is judged on its own rows, so clearing SWE says
-nothing about Project, and the day's score counts all three.
+nothing about Project, and the day's score counts all three. None of that
+applies to a list with `checks: false`, where a finished task is a deleted one
+and doneness is never recorded: those tick off only when you tap the row's own
+check yourself.
 
 **Unfinished tasks roll over.** Opening the page moves any task still open from
 an earlier day onto today — the row moves rather than being copied, so it stays
@@ -197,10 +208,13 @@ the same idempotent `alter table` statements once per server process, before the
 first read. Two carry a backfill beside them — `sort_order` numbering the rows
 that had none, and `subcategory` catching the four names that spent one deploy
 as top-level categories and moving them under SWE. Both match nothing on the
-second run. A third statement settles rather than runs out: everything in SWE
+second run. Two more settle rather than run out: everything in SWE
 or Project not already In Progress or Blocked becomes **In Progress**, which
 catches both the rows that predate the split and any stale subcategory left in
-the column, and matches nothing once those are the only two names in use. That
+the column, and matches nothing once those are the only two names in use; and
+every task still filed under `Misc` becomes **Miscellaneous**, the category
+being stored per row rather than looked up, so spelling the list's name out is
+a write. That
 is all there so a push goes live on its own; it isn't a migration system, and
 the next column shouldn't grow one without a reason.
 
