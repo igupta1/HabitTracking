@@ -39,6 +39,11 @@ export const SECTIONS = [
   'SWE',
   'Project',
   'Miscellaneous',
+  // Ishaan keeps one section for the body and one for the people in his life;
+  // Saloni's are still split the old four ways. No section is shared, so this
+  // one order gives each of them theirs.
+  'Health',
+  'Relationships',
   'Physique',
   'Cardio & Stretching',
   'Family/Partner',
@@ -148,8 +153,6 @@ export const HABITS: Record<UserId, Habit[]> = {
       categories: [{ name: 'Project', subs: TASK_STATES }],
       checks: false,
     },
-    { key: 'review_gate', title: 'Review Gate', kind: 'toggle', section: 'Project' },
-
     // Last of the three, so it is also the catch-all — see ownsTask.
     {
       key: 'tasks_misc',
@@ -160,27 +163,18 @@ export const HABITS: Record<UserId, Habit[]> = {
       checks: false,
     },
 
-    // The five with `history`: the ones worth seeing a run of days for.
-    { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique', history: true },
-    { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Physique', history: true },
-    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: false, ratings: true },
-    { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Physique' },
+    // The weigh-in leads, then the day's training, then the two it is easy to
+    // forget. The five with `history`: the ones worth seeing a run of days for.
+    { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Health' },
+    { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Health', history: true },
+    { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Health', history: true },
+    { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Health', history: true },
+    { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Health', history: true },
+    { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Health', history: true },
+    { key: 'food', title: 'Food Log', kind: 'food', section: 'Health', calories: false, ratings: true },
 
-    { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching', history: true },
-    {
-      key: 'stretching',
-      title: 'Stretching',
-      kind: 'toggle',
-      section: 'Cardio & Stretching',
-      history: true,
-    },
-    { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Cardio & Stretching', history: true },
-
-    { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Family/Partner' },
-    { key: 'future_date', title: 'Future Date Planned', kind: 'toggle', section: 'Family/Partner' },
-
-    { key: 'call_friend', title: 'Call A Friend', kind: 'toggle', section: 'Friends' },
-    { key: 'weekend_plans', title: 'Have Weekend Plans', kind: 'toggle', section: 'Friends' },
+    { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },
+    { key: 'call_friend', title: 'Respond To Texts', kind: 'toggle', section: 'Relationships' },
   ],
 
   saloni: [
