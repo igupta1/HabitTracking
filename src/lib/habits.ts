@@ -163,6 +163,13 @@ export const HABITS: Record<UserId, Habit[]> = {
       checks: false,
     },
 
+    // The rest of the Project section: the outreach that has to happen daily
+    // for any of the list above it to matter. Plain checks, no list of their
+    // own — the same three things every day.
+    { key: 'review_gate', title: 'Review Gate With Full Pipeline', kind: 'toggle', section: 'Project' },
+    { key: 'linkedin_connections', title: '20 LinkedIn Connections/Day', kind: 'toggle', section: 'Project' },
+    { key: 'linkedin_followups', title: 'LinkedIn Follow Ups', kind: 'toggle', section: 'Project' },
+
     // The weigh-in leads, then the day's training, then the two it is easy to
     // forget. The five with `history`: the ones worth seeing a run of days for.
     { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Health' },
