@@ -97,6 +97,15 @@ export type Habit = {
    */
   checks?: boolean
   /**
+   * Whether this is a week's goal rather than a day's. Its check is stored
+   * against the Sunday its week starts on (see weekStart), so it reads the same
+   * from any day of that week; it is drawn in the collapsed Weekly group at the
+   * foot of its section instead of among the day's rows, and it sits out the
+   * day's score — a week's work is not today's. For the kinds whose whole state
+   * is the check: toggle and counter.
+   */
+  weekly?: boolean
+  /**
    * Whether the row carries a button opening its consistency grid — a cell per
    * day, filled on the days it was done. Only for the kinds whose day is a
    * yes/no answerable from stored rows alone: toggle, counter, strength and
@@ -182,6 +191,22 @@ export const HABITS: Record<UserId, Habit[]> = {
 
     { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },
     { key: 'call_friend', title: 'Respond To Texts', kind: 'toggle', section: 'Relationships' },
+
+    // The week's goals, three sections' worth. Each lot is drawn in a Weekly
+    // group at the foot of its own section, collapsed until you open it —
+    // they're what the daily rows are for, not something to check off today.
+    // Kept together here, and in section order, since they read as one set.
+    { key: 'w_visibility', title: 'Visibility (Presentation, Meetings, etc.)', kind: 'toggle', section: 'SWE', weekly: true },
+    { key: 'w_debugging', title: 'Debugging Improvements', kind: 'toggle', section: 'SWE', weekly: true },
+
+    { key: 'w_run_distance', title: 'Running Distance Increased', kind: 'toggle', section: 'Health', weekly: true },
+    { key: 'w_bike_distance', title: 'Biking Distance Increased', kind: 'toggle', section: 'Health', weekly: true },
+    { key: 'w_weight_down', title: 'Weight Reduced 1 Pound', kind: 'toggle', section: 'Health', weekly: true },
+
+    { key: 'w_dinner_parents', title: 'Dinner With Parents', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_date_saloni', title: 'Planned Date With Saloni', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_friends_adventure', title: 'Adventure With Friends', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_album', title: 'Create Album For Memories', kind: 'toggle', section: 'Relationships', weekly: true },
   ],
 
   saloni: [
@@ -217,6 +242,30 @@ export function habit(user: UserId, key: string): Habit | undefined {
  */
 export function keyOfKind(user: UserId, kind: HabitKind): string | undefined {
   return HABITS[user].find((h) => h.kind === kind)?.key
+}
+
+/**
+ * Whether a habit is a week's goal rather than a day's — which decides the row
+ * its check is stored on, where it is drawn, and whether the day's score counts
+ * it. See Habit.weekly.
+ */
+export function isWeekly(h: Habit): boolean {
+  return h.weekly === true
+}
+
+/** A section's daily rows, in config order — the card's own contents. */
+export function dailyIn(user: UserId, section: Section): Habit[] {
+  return HABITS[user].filter((h) => h.section === section && !isWeekly(h))
+}
+
+/** A section's weekly goals, which hang together in the group below them. */
+export function weeklyIn(user: UserId, section: Section): Habit[] {
+  return HABITS[user].filter((h) => h.section === section && isWeekly(h))
+}
+
+/** Every weekly key this user has — what a read of the week's row asks for. */
+export function weeklyKeys(user: UserId): string[] {
+  return HABITS[user].filter(isWeekly).map((h) => h.key)
 }
 
 /** This user's task lists, in the order their sections appear. */

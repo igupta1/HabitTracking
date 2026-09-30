@@ -1,6 +1,14 @@
 import { sql } from '@/db'
-import { habitsFor, ownsTask, type FoodRating, type Habit, type UserId } from './habits'
-import { toDay, shiftDay, daysFrom } from './day'
+import {
+  habitsFor,
+  isWeekly,
+  ownsTask,
+  weeklyKeys,
+  type FoodRating,
+  type Habit,
+  type UserId,
+} from './habits'
+import { toDay, shiftDay, daysFrom, weekStart } from './day'
 
 export type TaskRow = {
   id: string
@@ -28,6 +36,8 @@ export type WorkoutRow = {
 
 export type DayData = {
   day: string
+  /** The Sunday this day's week starts on — the row every weekly check is on. */
+  week: string
   toggles: Record<string, { done: boolean; count: number }>
   tasks: TaskRow[]
   food: FoodRow[]
@@ -117,10 +127,23 @@ export async function rollOverTasks(user: UserId, day: string = toDay()): Promis
 
 export async function loadDay(user: UserId, day: string = toDay()): Promise<DayData> {
   await ensureColumns() // a no-op after the first call; see above
-  const [toggles, tasks, food, weights, workouts] = await Promise.all([
+  const week = weekStart(day)
+  const weekly = weeklyKeys(user)
+  const [toggles, weeklyRows, tasks, food, weights, workouts] = await Promise.all([
     sql<{ habit_key: string; done: boolean; count: number }[]>`
       select habit_key, done, count from toggles
       where user_id = ${user} and day = ${day}`,
+    // The week's goals, whose one row per week sits on the Sunday it starts —
+    // so it reads the same from any day of that week. Asked for by key rather
+    // than by day alone, or this would also pick up whatever daily habits were
+    // checked that Sunday. Saloni has no weekly goals, and `any('{}')` would be
+    // a round trip to learn that.
+    weekly.length
+      ? sql<{ habit_key: string; done: boolean; count: number }[]>`
+          select habit_key, done, count from toggles
+          where user_id = ${user} and day = ${week}
+            and habit_key = any(${weekly}::text[])`
+      : [],
     // Hand-picked order within a segment; the client groups by category and
     // then priority (see groupTasks), which is the only sort that happens on
     // its own. Ticking a task off leaves it exactly where you put it.
@@ -140,7 +163,12 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
 
   return {
     day,
-    toggles: Object.fromEntries(toggles.map((t) => [t.habit_key, { done: t.done, count: t.count }])),
+    week,
+    // One map for both cadences: no two habits share a key, so where a row was
+    // stored never matters to whoever reads it back out.
+    toggles: Object.fromEntries(
+      [...toggles, ...weeklyRows].map((t) => [t.habit_key, { done: t.done, count: t.count }])
+    ),
     tasks,
     food,
     weight: weights[0]?.lbs ?? null,
@@ -199,8 +227,13 @@ export function isDone(user: UserId, h: Habit, d: DayData): boolean {
   }
 }
 
+/**
+ * The day's score, in the header beside each name. Weekly goals are left out:
+ * a week's work is not today's, and counting them would open every Sunday nine
+ * short with no way to catch up by bedtime.
+ */
 export function progress(user: UserId, d: DayData): { done: number; total: number } {
-  const hs = habitsFor(user)
+  const hs = habitsFor(user).filter((h) => !isWeekly(h))
   return { done: hs.filter((h) => isDone(user, h, d)).length, total: hs.length }
 }
 

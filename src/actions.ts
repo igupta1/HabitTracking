@@ -2,14 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { sql } from '@/db'
-import { toDay } from '@/lib/day'
+import { toDay, weekStart } from '@/lib/day'
 import {
   habit,
   keyOfKind,
   isUserId,
+  isWeekly,
   filing,
   isFoodRating,
   type FoodRating,
+  type Habit,
   type HabitKind,
   type UserId,
 } from '@/lib/habits'
@@ -30,6 +32,15 @@ function check(user: string): UserId {
 function refresh() {
   revalidatePath('/ishaan')
   revalidatePath('/saloni')
+}
+
+/**
+ * The row a habit's check lives on. A week's goal keeps one row for the whole
+ * week, on the Sunday it starts, so checking it on Wednesday and unchecking it
+ * on Friday are the same row — see Habit.weekly.
+ */
+function rowDay(h: Habit): string {
+  return isWeekly(h) ? weekStart(toDay()) : toDay()
 }
 
 type OwnedTable = 'tasks' | 'food' | 'workouts'
@@ -67,7 +78,7 @@ export async function toggleCheck(u: string, key: string, currentlyDone: boolean
   const h = habit(user, key)
   if (!h) return
 
-  const day = toDay()
+  const day = rowDay(h)
   const next = !currentlyDone
 
   if (h.kind === 'counter') {
@@ -117,7 +128,7 @@ export async function setCounter(u: string, key: string, delta: number) {
   const initial = Math.max(0, Math.min(target, delta))
   await sql`
     insert into toggles (user_id, habit_key, day, count)
-    values (${user}, ${key}, ${toDay()}, ${initial})
+    values (${user}, ${key}, ${rowDay(h)}, ${initial})
     on conflict (user_id, habit_key, day)
       do update set count = greatest(0, least(${target}::int, toggles.count + ${delta}::int)),
                     updated_at = now()`

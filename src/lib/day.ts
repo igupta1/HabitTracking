@@ -96,3 +96,18 @@ export function daysFrom(from: string, to: string): string[] {
   for (let d = from; d <= to; d = shiftDay(d, 1)) out.push(d)
   return out
 }
+
+/**
+ * The Sunday the week containing `day` starts on. A weekly habit keeps one
+ * toggle row per week, stored on this day, so every day of that week reads and
+ * writes the same row. Sunday because that is already where the consistency
+ * grid starts each of its columns.
+ */
+export function weekStart(day: string): string {
+  return shiftDay(day, -weekdayOf(day))
+}
+
+/** "Sep 27 – Oct 3" — which week a weekly habit's checks belong to. */
+export function formatWeek(start: string): string {
+  return `${formatShortDay(start)} – ${formatShortDay(shiftDay(start, 6))}`
+}

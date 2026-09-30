@@ -36,6 +36,7 @@ src/actions.ts                   writes (server actions — no REST API, no stor
 src/components/rows.tsx          one component per habit kind
 src/components/weight-chart.tsx  date vs lbs
 src/components/consistency.tsx   a cell per day, filled on the days it was done
+src/components/weekly.tsx        the collapsed Weekly group at a section's foot
 src/app/[user]/page.tsx          the only real page: both columns
 ```
 
@@ -74,6 +75,9 @@ Per-person differences all live in that config:
   whichever are on.
 - **Food ratings** — only on Ishaan's food log (`ratings: true`). Each entry
   carries a dot you tap to cycle it unrated → green → yellow → red → unrated.
+- **Weekly goals** — `weekly: true` makes a habit a week's goal instead of a
+  day's. Ishaan has three sections' worth: SWE, Health and Relationships. See
+  below.
 
 Nothing is lost when the config changes under stored rows. A task filed under a
 category no list claims — or under none at all — collects in the **last** list,
@@ -146,6 +150,31 @@ zero-based: pounds of empty chart under the line would flatten the only thing it
 is drawn to show. Pointing at it, or focusing it and pressing ←/→, reads out a
 single day. Each chart draws one person, in that person's colour, so nothing
 ever has to tell the two colours apart — they don't separate under deuteranopia.
+
+**A habit can be a week's goal rather than a day's** — `weekly: true` in
+`src/lib/habits.ts`. Those rows don't sit among the day's: they collect in a
+**Weekly** group as the last row of their section's card, shut on every load,
+showing only how many of them are done and which week that is
+("Weekly · Sep 27 – Oct 3 · 1/2"). Open it and they are ordinary habit rows,
+checks and all. Ishaan has three sections' worth — **Visibility** and
+**Debugging Improvements** under SWE; the two distances and the pound under
+Health; parents, Saloni, friends and the album under Relationships — and
+Saloni has none, which is what leaves her sections with no group at all.
+
+The flag changes one thing about storage: the check goes on the **Sunday its
+week starts on** rather than on today, so every day of that week reads and
+writes the one row — tick it on Wednesday, untick it on Friday, and that is the
+same row both times. `weekStart` in `src/lib/day.ts` is the whole of it, Sunday
+because that is already where the consistency grid starts a column. `loadDay`
+therefore asks for the week's rows in a second query, *by key*: asking by day
+alone would also drag in whatever daily habits were checked that Sunday. The
+result merges into the one `toggles` map, since no two habits share a key.
+
+**Weekly goals sit out the day's score.** The `done/total` beside each name
+counts daily habits only — a week's work isn't today's, and counting it would
+open every Sunday nine short with no way to catch up by bedtime. The group
+keeps its own count instead. They get no consistency grid either: `history`
+draws a cell per day, and a week's row has six days with nothing in them.
 
 **Some habits have a consistency grid**, behind the same button: a cell per day,
 filled on the days it was done. Weeks run left to right and weekdays top to

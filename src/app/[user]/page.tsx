@@ -1,5 +1,14 @@
 import { notFound } from 'next/navigation'
-import { partnerOf, habitsFor, sectionsFor, nameOf, isUserId, USERS, type UserId } from '@/lib/habits'
+import {
+  partnerOf,
+  dailyIn,
+  weeklyIn,
+  sectionsFor,
+  nameOf,
+  isUserId,
+  USERS,
+  type UserId,
+} from '@/lib/habits'
 import {
   loadDay,
   rollOverTasks,
@@ -14,6 +23,7 @@ import {
 } from '@/lib/queries'
 import { toDay, formatDay } from '@/lib/day'
 import { HabitRow } from '@/components/rows'
+import { WeeklyGroup } from '@/components/weekly'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,15 +66,17 @@ function Column({
       </div>
 
       <div className="space-y-4">
-        {sectionsFor(who).map((section) => (
-          <section key={section}>
-            <h3 className="px-4 pb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-500">
-              {section}
-            </h3>
-            <div className="card divide-y divide-neutral-800">
-              {habitsFor(who)
-                .filter((h) => h.section === section)
-                .map((h) => (
+        {sectionsFor(who).map((section) => {
+          // The day's rows, then — where the section has any — the week's
+          // goals folded up beneath them as the card's last row.
+          const weekly = weeklyIn(who, section)
+          return (
+            <section key={section}>
+              <h3 className="px-4 pb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {section}
+              </h3>
+              <div className="card divide-y divide-neutral-800">
+                {dailyIn(who, section).map((h) => (
                   <HabitRow
                     key={h.key}
                     user={who}
@@ -77,9 +89,19 @@ function Column({
                     history={history}
                   />
                 ))}
-            </div>
-          </section>
-        ))}
+                {weekly.length > 0 && (
+                  <WeeklyGroup
+                    user={who}
+                    habits={weekly}
+                    done={Object.fromEntries(weekly.map((h) => [h.key, isDone(who, h, day)]))}
+                    day={day}
+                    readOnly={readOnly}
+                  />
+                )}
+              </div>
+            </section>
+          )
+        })}
       </div>
     </div>
   )
