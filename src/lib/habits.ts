@@ -98,7 +98,7 @@ export type Habit = {
   checks?: boolean
   /**
    * Whether this is a week's goal rather than a day's. Its check is stored
-   * against the Sunday its week starts on (see weekStart), so it reads the same
+   * against the Monday its week starts on (see weekStart), so it reads the same
    * from any day of that week; it is drawn in the collapsed Weekly group at the
    * foot of its section instead of among the day's rows, and it sits out the
    * day's score — a week's work is not today's. For the kinds whose whole state

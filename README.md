@@ -155,30 +155,39 @@ ever has to tell the two colours apart — they don't separate under deuteranopi
 `src/lib/habits.ts`. Those rows don't sit among the day's: they collect in a
 **Weekly** group as the last row of their section's card, shut on every load,
 showing only how many of them are done and which week that is
-("Weekly · Sep 27 – Oct 3 · 1/2"). Open it and they are ordinary habit rows,
+("Weekly · Sep 28 – Oct 4 · 1/2"). Open it and they are ordinary habit rows,
 checks and all. Ishaan has three sections' worth — **Visibility** and
 **Debugging Improvements** under SWE; the two distances and the pound under
 Health; parents, Saloni, friends and the album under Relationships — and
 Saloni has none, which is what leaves her sections with no group at all.
 
-The flag changes one thing about storage: the check goes on the **Sunday its
+The flag changes one thing about storage: the check goes on the **Monday its
 week starts on** rather than on today, so every day of that week reads and
 writes the one row — tick it on Wednesday, untick it on Friday, and that is the
-same row both times. `weekStart` in `src/lib/day.ts` is the whole of it, Sunday
-because that is already where the consistency grid starts a column. `loadDay`
-therefore asks for the week's rows in a second query, *by key*: asking by day
-alone would also drag in whatever daily habits were checked that Sunday. The
-result merges into the one `toggles` map, since no two habits share a key.
+same row both times. `weekStart` in `src/lib/day.ts` is the whole of it.
+`loadDay` therefore asks for the week's rows in a second query, *by key*:
+asking by day alone would also drag in whatever daily habits were checked that
+Monday. The result merges into the one `toggles` map, since no two habits share
+a key.
+
+**Weeks run Monday to Sunday**, and there is one definition of that:
+`weekdayOf` counts 0 for Monday through 6 for Sunday, which is both how far
+back a week started and the row a day sits on in the consistency grid. Move it
+and both move together. Weekly goals spent one deploy anchored to Sunday
+instead; `ensureColumns` shifts those rows a day forward, named key by key,
+since a bare Sunday says nothing on its own — every daily habit has Sundays
+too.
 
 **Weekly goals sit out the day's score.** The `done/total` beside each name
 counts daily habits only — a week's work isn't today's, and counting it would
-open every Sunday nine short with no way to catch up by bedtime. The group
+open every Monday nine short with no way to catch up by bedtime. The group
 keeps its own count instead. They get no consistency grid either: `history`
 draws a cell per day, and a week's row has six days with nothing in them.
 
 **Some habits have a consistency grid**, behind the same button: a cell per day,
 filled on the days it was done. Weeks run left to right and weekdays top to
-bottom, so a column is a week and a row is every Tuesday — which is the whole
+bottom, so a column is one Monday-to-Sunday week and a row is every Tuesday —
+which is the whole
 reason for the shape, since only that draws "he never does it at weekends" as
 two blank rows. Above it sits the count, "27 of 39 days". No streak: those are
 still deliberately not kept, and a run of cells says the same thing without

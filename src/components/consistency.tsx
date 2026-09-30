@@ -10,8 +10,9 @@ import type { DayMark } from '@/lib/queries'
  * consistent have I been" at a glance, behind the same button the weight row
  * uses for its chart.
  *
- * Weeks run left to right and weekdays top to bottom, so a column is a week and
- * a row is every Tuesday. That is the whole reason for the shape: skipping
+ * Weeks run left to right and weekdays top to bottom, so a column is one
+ * Monday-to-Sunday week — the same week the weekly goals are kept by — and a
+ * row is every Tuesday. That is the whole reason for the shape: skipping
  * every weekend draws two blank rows, which no run of dates in a line would
  * show. There is no streak count — the app deliberately doesn't keep them.
  */
@@ -69,7 +70,7 @@ export function Consistency({ user, days }: { user: UserId; days: DayMark[] }) {
             className="grid text-[9px] leading-none text-neutral-600"
             style={{ width: LABELS, gridTemplateRows: `repeat(7, ${CELL}px)`, rowGap: GAP }}
           >
-            {['', 'Mon', '', 'Wed', '', 'Fri', ''].map((l, i) => (
+            {['Mon', '', 'Wed', '', 'Fri', '', ''].map((l, i) => (
               <span key={i} className="self-center">
                 {l}
               </span>

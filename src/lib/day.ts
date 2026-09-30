@@ -84,9 +84,14 @@ export function shiftDay(day: string, delta: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** 0 for Sunday through 6 for Saturday — the row a day sits on in the grid. */
+/**
+ * 0 for Monday through 6 for Sunday — how far into its week a day is, which is
+ * both the row it sits on in the consistency grid and how far back its week
+ * started. Weeks run Monday to Sunday here; `getUTCDay` counts from Sunday, so
+ * this rotates it.
+ */
 export function weekdayOf(day: string): number {
-  return noon(day).getUTCDay()
+  return (noon(day).getUTCDay() + 6) % 7
 }
 
 /** Every day from `from` to `to`, inclusive. Both are `YYYY-MM-DD`. */
@@ -98,16 +103,16 @@ export function daysFrom(from: string, to: string): string[] {
 }
 
 /**
- * The Sunday the week containing `day` starts on. A weekly habit keeps one
+ * The Monday the week containing `day` starts on. A weekly habit keeps one
  * toggle row per week, stored on this day, so every day of that week reads and
- * writes the same row. Sunday because that is already where the consistency
- * grid starts each of its columns.
+ * writes the same row. Weeks run Monday to Sunday — one definition, shared with
+ * the column the consistency grid draws.
  */
 export function weekStart(day: string): string {
   return shiftDay(day, -weekdayOf(day))
 }
 
-/** "Sep 27 – Oct 3" — which week a weekly habit's checks belong to. */
+/** "Sep 28 – Oct 4" — which week a weekly habit's checks belong to. */
 export function formatWeek(start: string): string {
   return `${formatShortDay(start)} – ${formatShortDay(shiftDay(start, 6))}`
 }

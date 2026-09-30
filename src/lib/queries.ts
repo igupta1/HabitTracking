@@ -36,7 +36,7 @@ export type WorkoutRow = {
 
 export type DayData = {
   day: string
-  /** The Sunday this day's week starts on — the row every weekly check is on. */
+  /** The Monday this day's week starts on — the row every weekly check is on. */
   week: string
   toggles: Record<string, { done: boolean; count: number }>
   tasks: TaskRow[]
@@ -89,6 +89,20 @@ function ensureColumns(): Promise<void> {
     await sql`alter table food add column if not exists protein_g int`
     // Likewise for the traffic light — everything logged before it is unrated.
     await sql`alter table food add column if not exists rating text`
+    // Weekly goals spent one deploy anchored to the Sunday their week started
+    // on, before weeks were moved to Monday–Sunday. Their checks are stored on
+    // that anchor, so without this a goal ticked under the old reckoning would
+    // read as unticked. +1 day, which is the anchor of the week now holding six
+    // of the same seven days — so a check made this week stays checked this
+    // week. Named key by key because a bare Sunday says nothing on its own:
+    // every daily habit has Sundays too. Settles after one pass, those rows
+    // landing on a Monday, and matches nothing written since.
+    await sql`
+      update toggles set day = day + 1
+      where habit_key in ('w_visibility', 'w_debugging', 'w_run_distance',
+                          'w_bike_distance', 'w_weight_down', 'w_dinner_parents',
+                          'w_date_saloni', 'w_friends_adventure', 'w_album')
+        and extract(dow from day) = 0`
   })().catch((e) => {
     migrated = undefined // a cold-start timeout shouldn't poison every later load
     throw e
@@ -133,10 +147,10 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
     sql<{ habit_key: string; done: boolean; count: number }[]>`
       select habit_key, done, count from toggles
       where user_id = ${user} and day = ${day}`,
-    // The week's goals, whose one row per week sits on the Sunday it starts —
+    // The week's goals, whose one row per week sits on the Monday it starts —
     // so it reads the same from any day of that week. Asked for by key rather
     // than by day alone, or this would also pick up whatever daily habits were
-    // checked that Sunday. Saloni has no weekly goals, and `any('{}')` would be
+    // checked that Monday. Saloni has no weekly goals, and `any('{}')` would be
     // a round trip to learn that.
     weekly.length
       ? sql<{ habit_key: string; done: boolean; count: number }[]>`
@@ -229,7 +243,7 @@ export function isDone(user: UserId, h: Habit, d: DayData): boolean {
 
 /**
  * The day's score, in the header beside each name. Weekly goals are left out:
- * a week's work is not today's, and counting them would open every Sunday nine
+ * a week's work is not today's, and counting them would open every Monday nine
  * short with no way to catch up by bedtime.
  */
 export function progress(user: UserId, d: DayData): { done: number; total: number } {

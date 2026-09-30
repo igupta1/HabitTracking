@@ -7,9 +7,9 @@
 -- boundary is computed once in src/lib/day.ts.
 
 -- No DDL for weekly goals: a habit marked `weekly` in src/lib/habits.ts keeps
--- one row per week rather than per day, stored against the Sunday its week
--- starts on (see weekStart). So a `day` here that is always a Sunday is a
--- week's check, not a day's.
+-- one row per week rather than per day, stored against the Monday its week
+-- starts on (see weekStart). So a `day` here that is always a Monday is a
+-- week's check, not a day's. Weeks run Monday to Sunday.
 create table if not exists toggles (
   user_id    text not null,
   habit_key  text not null,
