@@ -180,13 +180,12 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'linkedin_followups', title: 'LinkedIn Follow Ups', kind: 'toggle', section: 'Project' },
 
     // The weigh-in leads, then the day's training, then the two it is easy to
-    // forget. The five with `history`: the ones worth seeing a run of days for.
+    // forget. The four with `history`: the ones worth seeing a run of days for.
     { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Health' },
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Health', history: true },
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Health', history: true },
     { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Health', history: true },
     { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Health', history: true },
-    { key: 'creatine', title: 'Creatine', kind: 'toggle', section: 'Health', history: true },
     { key: 'food', title: 'Food Log', kind: 'food', section: 'Health', calories: false, ratings: true },
 
     { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },

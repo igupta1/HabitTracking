@@ -199,7 +199,7 @@ yes: the name was typed, so it may as well be read. Every other grid says Done
 or Missed, cardio included, where "run" beside a run would add nothing.
 
 Which rows have one is a `history: true` in `src/lib/habits.ts` — currently
-Ishaan's Strength Workout, Creatine, Cardio, Stretching and Wart Pad. It can go
+Ishaan's Strength Workout, Cardio, Stretching and Wart Pad. It can go
 on any habit whose day is a yes/no answerable from stored rows alone (toggle,
 counter, strength, cardio); food and tasks have no single answer to draw, and
 body weight has its chart instead.
