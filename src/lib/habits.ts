@@ -173,6 +173,7 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Health', history: true },
     { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Health', history: true },
 
+    { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },
     { key: 'call_friend', title: 'Respond To Texts', kind: 'toggle', section: 'Relationships' },
 
     // The week's goals, two sections' worth. Each lot is drawn in a Weekly
