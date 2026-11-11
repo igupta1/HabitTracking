@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { USERS, USER_IDS } from '@/lib/habits'
 
-/** Landing page. In practice you each bookmark /ishaan or /saloni directly. */
+/** Landing page. In practice you bookmark /ishaan directly. */
 export default function PickUser() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-6">

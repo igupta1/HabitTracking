@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import {
-  partnerOf,
   dailyIn,
   weeklyIn,
   sectionsFor,
@@ -27,11 +26,7 @@ import { WeeklyGroup } from '@/components/weekly'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * Both people, side by side. Yours is interactive, theirs is read-only — that's
- * the whole accountability surface, so there's no separate partner page.
- * Stacks on narrow screens.
- */
+/** One person's day, section by section. */
 function Column({
   who,
   day,
@@ -112,36 +107,27 @@ export default async function TodayPage({ params }: { params: Promise<{ user: st
   if (!isUserId(user)) notFound()
 
   const me = user
-  const them = partnerOf(me)
   const day = toDay()
 
   // Before the reads, so today's list already includes what was left over.
   // There is no cron in this app; opening the page is what advances the day.
-  await Promise.all([rollOverTasks(me, day), rollOverTasks(them, day)])
+  await rollOverTasks(me, day)
 
-  const [mine, theirs, workoutNames, myWeights, theirWeights, myPast, theirPast] =
-    await Promise.all([
-      loadDay(me, day),
-      loadDay(them, day),
-      recentWorkoutNames(me),
-      // Both columns, since the charts open on either person's rows.
-      weightHistory(me, day),
-      weightHistory(them, day),
-      habitHistory(me, day),
-      habitHistory(them, day),
-    ])
+  const [mine, workoutNames, myWeights, myPast] = await Promise.all([
+    loadDay(me, day),
+    recentWorkoutNames(me),
+    weightHistory(me, day),
+    habitHistory(me, day),
+  ])
 
   return (
-    <main className="mx-auto max-w-5xl px-2 pb-16">
+    <main className="mx-auto max-w-2xl px-2 pb-16">
       <header className="px-4 pb-5 pt-6">
         <h1 className="text-3xl font-semibold tracking-tight">Today</h1>
         <p className="text-sm text-neutral-500">{formatDay(day)}</p>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Column who={me} day={mine} weights={myWeights} history={myPast} names={workoutNames} />
-        <Column who={them} day={theirs} weights={theirWeights} history={theirPast} readOnly />
-      </div>
+      <Column who={me} day={mine} weights={myWeights} history={myPast} names={workoutNames} />
     </main>
   )
 }

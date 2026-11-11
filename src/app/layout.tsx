@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Habits',
-  description: 'Ishaan + Saloni daily accountability',
+  description: 'Ishaan\'s daily accountability',
   icons: { icon: '/icons/icon-192.png' },
 }
 

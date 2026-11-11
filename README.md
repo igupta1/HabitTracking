@@ -1,6 +1,6 @@
 # Habits
 
-Daily accountability for Ishaan + Saloni. A web app, used from laptops.
+Daily accountability for Ishaan. A web app, used from laptops.
 
 Replaces the SwiftUI app that used to live in this repo. That code is gone from
 the working tree but preserved in commit `b79a969` if it's ever wanted.
@@ -13,23 +13,21 @@ paid-only. A web app has neither limit and nothing to install.
 
 ## How it works
 
-Open `/ishaan` or `/saloni`. You see **both people side by side** — your habits
-interactive, theirs read-only. That's the whole app. No notifications: the point
-is that you can both see where the other stands at a glance.
+Open `/ishaan`. You see your day, section by section. That's the whole app. No
+notifications.
 
 Identity is the URL. There are no accounts, passwords, or cookies. The trade is
-that anyone with the URL can write as either person — fine for two people on an
-unlisted deploy URL, but it is not security. If it ever matters, a
+that anyone with the URL can write — fine on an unlisted deploy URL, but it is not security. If it ever matters, a
 shared-password cookie is ~20 lines.
 
 ## Shape of it
 
-Deliberately small. Two users, so there's no users table — `user_id` is just
-the text `'ishaan'` or `'saloni'`.
+Deliberately small. One user, so there's no users table — `user_id` is just
+the text `'ishaan'`.
 
 ```
 schema.sql                       5 tables, plain SQL, no ORM or migration tool
-src/lib/habits.ts                the two goal sets, as a constant
+src/lib/habits.ts                the goal set, as a constant
 src/lib/day.ts                   day boundaries (America/LA, flips at 4am)
 src/lib/queries.ts               reads
 src/actions.ts                   writes (server actions — no REST API, no store)
@@ -37,12 +35,11 @@ src/components/rows.tsx          one component per habit kind
 src/components/weight-chart.tsx  date vs lbs
 src/components/consistency.tsx   a cell per day, filled on the days it was done
 src/components/weekly.tsx        the collapsed Weekly group at a section's foot
-src/app/[user]/page.tsx          the only real page: both columns
+src/app/[user]/page.tsx          the only real page
 ```
 
-`rows.tsx` is shared between your column and theirs — a `readOnly` prop strips
-the buttons and forms. That's the only difference between the two, so there's
-one place to change when a habit kind changes.
+`rows.tsx` has one component per habit kind, so there's one place to change
+when a habit kind changes.
 
 Adding or changing a habit means editing `src/lib/habits.ts` and pushing.
 `habit_key` is stored as text, so removing a habit leaves old entries intact.
@@ -60,23 +57,20 @@ Per-person differences all live in that config:
   heading apiece, and dragging a task across the heading is what moves it
   between them. Miscellaneous doesn't subdivide: `subs: []` leaves it one run of rows
   with priority the only sort and the P the only thing to pick when adding.
-  Saloni has one list, under Career, with no `categories` at all — flat, and
-  with no priorities either. Give her some by adding the field.
+  A list with no `categories` at all is flat, with no priorities either.
 - **Task checks** — all three of Ishaan's lists set `checks: false`, which
   takes the check off every task in them: you finish one by hitting its ✕, so
   there is no done task to draw. The `done/total` beside the list title goes
   with them — a bare total counts the rows you are already looking at — and the
   list's own check goes back to being a manual toggle, since with nothing
   written down there is nothing for the day's score to read (see
-  `impliedByData`). Saloni's list omits the flag and keeps both its checks and
-  its count.
-- **Calories and protein** — only shown on Saloni's food log (`calories: true`,
-  `protein: true`). Either flag can stand on its own; the daily total row shows
-  whichever are on.
-- **Food ratings** — only on Ishaan's food log (`ratings: true`). Each entry
-  carries a dot you tap to cycle it unrated → green → yellow → red → unrated.
+  `impliedByData`). A list that omits the flag keeps both its checks and its
+  count.
+- **Food and body weight** — the `food` and `weight` kinds (with `calories`,
+  `protein` and `ratings` on food) are still supported, but no habit uses them
+  right now.
 - **Weekly goals** — `weekly: true` makes a habit a week's goal instead of a
-  day's. Ishaan has three sections' worth: SWE, Health and Relationships. See
+  day's. Ishaan has two sections' worth: Miscellaneous and Relationships. See
   below.
 
 Nothing is lost when the config changes under stored rows. A task filed under a
@@ -116,7 +110,7 @@ drop; a drop only ever renumbers the list it happened in.
 
 A task list counts as done once every **P1** in *that list* is done, even
 with P2/P3 left over — clearing the must-dos is the bar. With no P1s on the list
-(always the case for Saloni, who has no priorities) it falls back to needing
+it falls back to needing
 everything done. Each list is judged on its own rows, so clearing SWE says
 nothing about Project, and the day's score counts all three. None of that
 applies to a list with `checks: false`, where a finished task is a deleted one
@@ -135,31 +129,26 @@ per-day and starts empty.
 than app logic. Delete the logged one to change it. Cardio is unrestricted.
 
 Food entries are always-editable inputs that save on blur — clearing the text
-deletes the entry. Saloni's log totals its calories and protein in a row at the
-bottom. Ishaan's carries a traffic light instead: one tap on an entry's dot
-cycles it through green, yellow and red and back to unrated, so a day's log gets
-colour-coded in one pass down the column. The colour shows on the partner view
-too, as a dot that stays faint until it is set.
+deletes the entry. With `calories`/`protein` on, the log totals them in a row at
+the bottom; with `ratings` on, each entry carries a traffic light: one tap on
+its dot cycles it through green, yellow and red and back to unrated.
 
-**Body weight has a chart.** The small trend button on either person's weight
-row — yours or theirs — opens a line of date vs lbs for the last 90 days, drawn
+**Body weight has a chart.** The small trend button on a weight row opens a line of date vs lbs for the last 90 days, drawn
 as plain SVG in `src/components/weight-chart.tsx` rather than by a chart
 library. Points are spaced by *date*, so a week of not weighing in reads as a
 week-long gap instead of one more step along the line, and the axis is not
 zero-based: pounds of empty chart under the line would flatten the only thing it
 is drawn to show. Pointing at it, or focusing it and pressing ←/→, reads out a
-single day. Each chart draws one person, in that person's colour, so nothing
-ever has to tell the two colours apart — they don't separate under deuteranopia.
+single day.
 
 **A habit can be a week's goal rather than a day's** — `weekly: true` in
 `src/lib/habits.ts`. Those rows don't sit among the day's: they collect in a
 **Weekly** group as the last row of their section's card, shut on every load,
 showing only how many of them are done and which week that is
 ("Weekly · Sep 28 – Oct 4 · 1/2"). Open it and they are ordinary habit rows,
-checks and all. Ishaan has three sections' worth — **Visibility** and
-**Debugging Improvements** under SWE; the two distances and the pound under
-Health; parents, Saloni, friends and the album under Relationships — and
-Saloni has none, which is what leaves her sections with no group at all.
+checks and all. Ishaan has two sections' worth — **Review Finances &
+Investments** under Miscellaneous; parents, dates, friends and pictures under
+Relationships — and a section with none has no group at all.
 
 The flag changes one thing about storage: the check goes on the **Monday its
 week starts on** rather than on today, so every day of that week reads and
@@ -180,7 +169,7 @@ too.
 
 **Weekly goals sit out the day's score.** The `done/total` beside each name
 counts daily habits only — a week's work isn't today's, and counting it would
-open every Monday nine short with no way to catch up by bedtime. The group
+open every Monday five short with no way to catch up by bedtime. The group
 keeps its own count instead. They get no consistency grid either: `history`
 draws a cell per day, and a week's row has six days with nothing in them.
 
@@ -218,8 +207,8 @@ and `habitHistory` in `src/lib/queries.ts`, whose `WEIGHT_WINDOW_DAYS` and
 
 Every add form has an explicit `+` submit button, and needs one: a form with
 more than one blocking field and no submit button never implicitly submits on
-Enter. That silently made Saloni's multi-field (text + calories + protein) food
-log impossible to add to, while Ishaan's one-field version worked fine. Don't
+Enter. That once silently made a multi-field (text + calories + protein) food
+log impossible to add to, while a one-field version worked fine. Don't
 remove those buttons.
 
 ## Local setup
@@ -277,8 +266,7 @@ Cut to keep this small; add only if actually missed:
 
 - **Notifications.** Dropped once this became laptop-only: desktop push only
   fires while the laptop is awake with the browser open, so most nudges would
-  never land. Both columns being visible on one page covers the same need. This
-  also removed the `events` and `push_subs` tables, web-push, VAPID keys, the
+  never land. This also removed the `events` and `push_subs` tables, web-push, VAPID keys, the
   service worker, and the cron.
 - **A RepCount clone.** Strength logging is just the typed name of the session
   ("Push", "Pull", "Legs", "SolidCore", "Rest"), autocompleted from what you've

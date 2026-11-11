@@ -150,8 +150,8 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
     // The week's goals, whose one row per week sits on the Monday it starts —
     // so it reads the same from any day of that week. Asked for by key rather
     // than by day alone, or this would also pick up whatever daily habits were
-    // checked that Monday. Saloni has no weekly goals, and `any('{}')` would be
-    // a round trip to learn that.
+    // checked that Monday. A user with no weekly goals skips it, since
+    // `any('{}')` would be a round trip to learn that.
     weekly.length
       ? sql<{ habit_key: string; done: boolean; count: number }[]>`
           select habit_key, done, count from toggles
@@ -211,8 +211,7 @@ function impliedByData(user: UserId, h: Habit, d: DayData): boolean {
       const mine = d.tasks.filter((t) => ownsTask(user, h, t))
       if (mine.length === 0) return false
       // Clearing the must-dos counts as done, even with P2/P3 left over. With no
-      // P1s to clear (always the case for Saloni, who has no priorities) it
-      // falls back to needing the whole list.
+      // P1s to clear it falls back to needing the whole list.
       const p1 = mine.filter((t) => t.priority === 1)
       return p1.length > 0 ? p1.every((t) => t.done) : mine.every((t) => t.done)
     }

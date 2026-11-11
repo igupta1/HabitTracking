@@ -17,10 +17,9 @@ import {
 } from '@/lib/habits'
 
 /**
- * There is no login: identity is the `/ishaan` or `/saloni` path, and every
- * action takes the acting user as an argument. That means anyone with the URL
- * can write as either person — an accepted trade for a two-person app on an
- * unlisted deploy URL. `check()` only stops a bogus user_id from reaching the
+ * There is no login: identity is the `/ishaan` path, and every action takes
+ * the acting user as an argument. That means anyone with the URL can write —
+ * an accepted trade for a one-person app on an unlisted deploy URL. `check()` only stops a bogus user_id from reaching the
  * database; it is not protection against impersonation.
  */
 function check(user: string): UserId {
@@ -28,10 +27,8 @@ function check(user: string): UserId {
   return user
 }
 
-/** Both pages show both people, so any change invalidates both. */
 function refresh() {
   revalidatePath('/ishaan')
-  revalidatePath('/saloni')
 }
 
 /**

@@ -4,20 +4,15 @@
  * removing a habit here leaves old entries intact.
  *
  * Section and habit titles are Title Case — every word capitalised, including
- * the small ones ("Call With Saloni").
+ * the small ones ("Dinner With Parents").
  */
 
 export const USERS = {
   ishaan: { name: 'Ishaan', color: '#59d9d9' },
-  saloni: { name: 'Saloni', color: '#f0a3c4' },
 } as const
 
 export type UserId = keyof typeof USERS
 export const USER_IDS = Object.keys(USERS) as UserId[]
-
-export function partnerOf(id: UserId): UserId {
-  return id === 'ishaan' ? 'saloni' : 'ishaan'
-}
 
 export function nameOf(id: UserId): string {
   return USERS[id].name
@@ -33,21 +28,13 @@ export type HabitKind =
   | 'weight' // daily body weight
 
 export const SECTIONS = [
-  // Ishaan's work splits across the first three, one task list each. Saloni's
-  // one undivided list stays under Career; nothing of hers is in the others.
-  'Career',
+  // The work splits across the first three, one task list each.
   'SWE',
   'Project',
   'Miscellaneous',
-  // Ishaan keeps one section for the body and one for the people in his life;
-  // Saloni's are still split the old four ways. No section is shared, so this
-  // one order gives each of them theirs.
+  // One section for the body and one for the people in Ishaan's life.
   'Health',
   'Relationships',
-  'Physique',
-  'Cardio & Stretching',
-  'Family/Partner',
-  'Friends',
 ] as const
 export type Section = (typeof SECTIONS)[number]
 
@@ -150,7 +137,7 @@ export const HABITS: Record<UserId, Habit[]> = {
       // hand order inside a priority — and dragging a task across the heading
       // is what moves it between them. Miscellaneous stays a single flat list.
       categories: [{ name: 'SWE', subs: TASK_STATES }],
-      // All three of Ishaan's lists are ✕-to-finish; only Saloni's ticks off.
+      // All three lists are ✕-to-finish.
       checks: false,
     },
 
@@ -179,50 +166,25 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'linkedin_connections', title: '20 LinkedIn Connections/Day', kind: 'toggle', section: 'Project' },
     { key: 'linkedin_followups', title: 'LinkedIn Follow Ups', kind: 'toggle', section: 'Project' },
 
-    // The weigh-in leads, then the day's training, then the two it is easy to
-    // forget. The four with `history`: the ones worth seeing a run of days for.
-    { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Health' },
+    // The day's training, then the two it is easy to forget. The four with
+    // `history`: the ones worth seeing a run of days for.
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Health', history: true },
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Health', history: true },
     { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Health', history: true },
     { key: 'pad', title: 'Wart Pad', kind: 'toggle', section: 'Health', history: true },
-    { key: 'food', title: 'Food Log', kind: 'food', section: 'Health', calories: false, ratings: true },
 
-    { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },
     { key: 'call_friend', title: 'Respond To Texts', kind: 'toggle', section: 'Relationships' },
 
-    // The week's goals, three sections' worth. Each lot is drawn in a Weekly
+    // The week's goals, two sections' worth. Each lot is drawn in a Weekly
     // group at the foot of its own section, collapsed until you open it —
     // they're what the daily rows are for, not something to check off today.
     // Kept together here, and in section order, since they read as one set.
-    { key: 'w_visibility', title: 'Visibility (Presentation, Meetings, etc.)', kind: 'toggle', section: 'SWE', weekly: true },
-    { key: 'w_debugging', title: 'Debugging Improvements', kind: 'toggle', section: 'SWE', weekly: true },
-
-    { key: 'w_run_distance', title: 'Running Distance Increased', kind: 'toggle', section: 'Health', weekly: true },
-    { key: 'w_bike_distance', title: 'Biking Distance Increased', kind: 'toggle', section: 'Health', weekly: true },
-    { key: 'w_weight_down', title: 'Weight Reduced 1 Pound', kind: 'toggle', section: 'Health', weekly: true },
+    { key: 'w_finances', title: 'Review Finances & Investments', kind: 'toggle', section: 'Miscellaneous', weekly: true },
 
     { key: 'w_dinner_parents', title: 'Dinner With Parents', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_date_saloni', title: 'Planned Date With Saloni', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_friends_adventure', title: 'Adventure With Friends', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_album', title: 'Create Album For Memories', kind: 'toggle', section: 'Relationships', weekly: true },
-  ],
-
-  saloni: [
-    { key: 'tasks', title: 'Tasks', kind: 'tasks', section: 'Career' },
-
-    { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Physique' },
-    { key: 'food', title: 'Food Log', kind: 'food', section: 'Physique', calories: true, protein: true },
-    { key: 'weight', title: 'Body Weight', kind: 'weight', section: 'Physique' },
-
-    { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Cardio & Stretching' },
-    { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Cardio & Stretching' },
-    { key: 'water', title: 'Water', kind: 'counter', section: 'Cardio & Stretching', target: 10 },
-
-    { key: 'call_partner', title: 'Call With Ishaan', kind: 'toggle', section: 'Family/Partner' },
-    { key: 'call_family', title: 'Call A Family Member', kind: 'toggle', section: 'Family/Partner' },
-
-    { key: 'weekend_plans', title: 'Weekend Plans', kind: 'toggle', section: 'Friends' },
+    { key: 'w_two_dates', title: 'Two Planned Dates', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_friends_adventure', title: 'Plans To See All Groups', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_album', title: 'Pictures From Hangouts & Dates', kind: 'toggle', section: 'Relationships', weekly: true },
   ],
 }
 
@@ -278,8 +240,7 @@ export function taskLists(user: UserId): Habit[] {
  * why those names are both a list's own and a section's.
  *
  * The last list is the catch-all: a task filed under a category no list claims,
- * or under none at all, lands there rather than vanishing off the page. For
- * Saloni, whose one list has no categories, that is every task she has.
+ * or under none at all, lands there rather than vanishing off the page.
  */
 export function ownsTask(user: UserId, h: Habit, t: { category: string | null }): boolean {
   if (h.categories?.some((c) => c.name === t.category)) return true

@@ -31,9 +31,8 @@ import { WeightChart } from './weight-chart'
 import { Consistency } from './consistency'
 
 /**
- * One component per habit kind, shared between your own Today page and the
- * read-only partner view. `readOnly` strips the buttons and forms — that's the
- * only difference between the two, so the markup lives in one place.
+ * One component per habit kind, so the markup lives in one place. `readOnly`
+ * strips the buttons and forms.
  */
 type P = { user: UserId; habit: Habit; readOnly?: boolean }
 
@@ -72,7 +71,7 @@ function Title({ children }: { children: React.ReactNode }) {
 /**
  * Explicit submit button. Not just an affordance: a form with more than one
  * blocking field and no submit button never implicitly submits on Enter, which
- * is what made Saloni's two-field food log impossible to add to.
+ * is what once made a two-field food log impossible to add to.
  */
 function Add({ disabled }: { disabled?: boolean }) {
   return (
@@ -266,8 +265,8 @@ function TaskTitle({ user, task, checks }: { user: UserId; task: TaskRow; checks
 }
 
 /**
- * The list as it is drawn: one flat group for Saloni, and for Ishaan one per
- * subcategory, under a heading for the category it belongs to.
+ * The list as it is drawn: one group per subcategory, under a heading for the
+ * category it belongs to — or one flat group for a list with no categories.
  *
  * A subcategory is a single consecutive run of rows: priority sorts it, P1
  * first, and the hand-picked order holds inside each run of one priority. There

@@ -1,9 +1,9 @@
--- Habits: Ishaan + Saloni. Two users, so user_id is just 'ishaan' | 'saloni'
--- and there is no users table. Apply with `npm run db:init` (idempotent).
+-- Habits: Ishaan. One user, so user_id is just 'ishaan' and there is no users
+-- table. Apply with `npm run db:init` (idempotent).
 --
 -- 5 tables: toggles, tasks, food, weights, workouts.
 --
--- Both users are in America/Los_Angeles, so `day` is a plain date and the
+-- The user is in America/Los_Angeles, so `day` is a plain date and the
 -- boundary is computed once in src/lib/day.ts.
 
 -- No DDL for weekly goals: a habit marked `weekly` in src/lib/habits.ts keeps
@@ -72,7 +72,7 @@ create table if not exists food (
   user_id    text not null,
   day        date not null,
   text       text not null,
-  calories   int,                             -- only shown for Saloni
+  calories   int,                             -- only shown with `calories: true`
   protein_g  int,                             -- likewise, in grams
   -- 'red' | 'yellow' | 'green', set by tapping the swatch after logging the
   -- entry. Null until it is rated, which is most of them.
@@ -112,5 +112,4 @@ create index if not exists workouts_user_day on workouts (user_id, day);
 create unique index if not exists workouts_one_strength_per_day
   on workouts (user_id, day) where mode = 'strength';
 
--- No events or push tables: there are no notifications. Both people see each
--- other's day side by side on the same page instead.
+-- No events or push tables: there are no notifications.
