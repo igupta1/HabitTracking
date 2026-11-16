@@ -36,13 +36,13 @@ export function WeeklyGroup({
   return (
     <div>
       {/* The text is the button's own name, so no aria-label to override it —
-          "Weekly Sep 28 – Oct 4 1/2", plus expanded or not. */}
+          "Sunday Checklist Sep 28 – Oct 4 1/2", plus expanded or not. */}
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="tap flex w-full items-center gap-3 px-4 py-3 text-left"
       >
-        <span className="font-medium">Weekly</span>
+        <span className="font-medium">Sunday Checklist</span>
         <span className="flex-1 text-xs text-neutral-500">{formatWeek(day.week)}</span>
         <span className="tabular-nums text-sm text-neutral-400">
           {doneCount}/{habits.length}

@@ -34,7 +34,7 @@ src/actions.ts                   writes (server actions — no REST API, no stor
 src/components/rows.tsx          one component per habit kind
 src/components/weight-chart.tsx  date vs lbs
 src/components/consistency.tsx   a cell per day, filled on the days it was done
-src/components/weekly.tsx        the collapsed Weekly group at a section's foot
+src/components/weekly.tsx        the collapsed Sunday Checklist group at a section's foot
 src/app/[user]/page.tsx          the only real page
 ```
 
@@ -143,11 +143,12 @@ single day.
 
 **A habit can be a week's goal rather than a day's** — `weekly: true` in
 `src/lib/habits.ts`. Those rows don't sit among the day's: they collect in a
-**Weekly** group as the last row of their section's card, shut on every load,
+**Sunday Checklist** group as the last row of their section's card, shut on every load,
 showing only how many of them are done and which week that is
-("Weekly · Sep 28 – Oct 4 · 1/2"). Open it and they are ordinary habit rows,
-checks and all. Ishaan has two sections' worth — **Review Finances &
-Investments** under Miscellaneous; parents, dates, friends and pictures under
+("Sunday Checklist · Sep 28 – Oct 4 · 1/2"). Open it and they are ordinary habit rows,
+checks and all. Ishaan has three sections' worth — inventory refresh, LinkedIn quota and
+Smartlead pipeline under Project; **Review Finances & Investments** under
+Miscellaneous; parents, dates, friends and pictures under
 Relationships — and a section with none has no group at all.
 
 The flag changes one thing about storage: the check goes on the **Monday its

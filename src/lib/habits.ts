@@ -160,11 +160,10 @@ export const HABITS: Record<UserId, Habit[]> = {
     },
 
     // The rest of the Project section: the outreach that has to happen daily
-    // for any of the list above it to matter. Plain checks, no list of their
-    // own — the same three things every day.
-    { key: 'review_gate', title: 'Review Gate With Full Pipeline', kind: 'toggle', section: 'Project' },
-    { key: 'linkedin_connections', title: '20 LinkedIn Connections/Day', kind: 'toggle', section: 'Project' },
-    { key: 'linkedin_followups', title: 'LinkedIn Follow Ups', kind: 'toggle', section: 'Project' },
+    // for any of the list above it to matter. A plain check, no list of its
+    // own. The key predates the email half of the title; kept so its history
+    // stays attached.
+    { key: 'linkedin_followups', title: 'Email & LinkedIn Follow Ups', kind: 'toggle', section: 'Project' },
 
     // The day's training, then the two it is easy to forget. The four with
     // `history`: the ones worth seeing a run of days for.
@@ -176,10 +175,14 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },
     { key: 'call_friend', title: 'Respond To Texts', kind: 'toggle', section: 'Relationships' },
 
-    // The week's goals, two sections' worth. Each lot is drawn in a Weekly
-    // group at the foot of its own section, collapsed until you open it —
+    // The week's goals, three sections' worth. Each lot is drawn in a Sunday
+    // Checklist group at the foot of its own section, collapsed until you open it —
     // they're what the daily rows are for, not something to check off today.
     // Kept together here, and in section order, since they read as one set.
+    { key: 'w_inventory_refresh', title: 'Inventory Refresh', kind: 'toggle', section: 'Project', weekly: true },
+    { key: 'w_li_quota', title: 'Weekly Quota Of LI Requests', kind: 'toggle', section: 'Project', weekly: true },
+    { key: 'w_smartlead', title: 'Smartlead Pipeline For The Week', kind: 'toggle', section: 'Project', weekly: true },
+
     { key: 'w_finances', title: 'Review Finances & Investments', kind: 'toggle', section: 'Miscellaneous', weekly: true },
 
     { key: 'w_dinner_parents', title: 'Dinner With Parents', kind: 'toggle', section: 'Relationships', weekly: true },
