@@ -180,15 +180,15 @@ export const HABITS: Record<UserId, Habit[]> = {
     // they're what the daily rows are for, not something to check off today.
     // Kept together here, and in section order, since they read as one set.
     { key: 'w_inventory_refresh', title: 'Inventory Refresh', kind: 'toggle', section: 'Project', weekly: true },
-    { key: 'w_li_quota', title: 'Weekly Quota Of LI Requests', kind: 'toggle', section: 'Project', weekly: true },
+    { key: 'w_li_quota', title: 'LI Connections For The Week', kind: 'toggle', section: 'Project', weekly: true },
     { key: 'w_smartlead', title: 'Smartlead Pipeline For The Week', kind: 'toggle', section: 'Project', weekly: true },
 
     { key: 'w_finances', title: 'Review Finances & Investments', kind: 'toggle', section: 'Miscellaneous', weekly: true },
 
-    { key: 'w_dinner_parents', title: 'Dinner With Parents', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_dinner_parents', title: 'Dinner Planned With Parents', kind: 'toggle', section: 'Relationships', weekly: true },
     { key: 'w_two_dates', title: 'Two Planned Dates', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_friends_adventure', title: 'Plans To See All Groups', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_album', title: 'Pictures From Hangouts & Dates', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_friends_adventure', title: 'Hangouts Planned With Friends', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_album', title: 'Album Update From Previous Week', kind: 'toggle', section: 'Relationships', weekly: true },
   ],
 }
 

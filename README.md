@@ -146,7 +146,7 @@ single day.
 **Sunday Checklist** group as the last row of their section's card, shut on every load,
 showing only how many of them are done and which week that is
 ("Sunday Checklist · Sep 28 – Oct 4 · 1/2"). Open it and they are ordinary habit rows,
-checks and all. Ishaan has three sections' worth — inventory refresh, LinkedIn quota and
+checks and all. Ishaan has three sections' worth — inventory refresh, LinkedIn connections and
 Smartlead pipeline under Project; **Review Finances & Investments** under
 Miscellaneous; parents, dates, friends and pictures under
 Relationships — and a section with none has no group at all.
