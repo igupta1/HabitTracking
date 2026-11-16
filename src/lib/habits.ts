@@ -4,7 +4,7 @@
  * removing a habit here leaves old entries intact.
  *
  * Section and habit titles are Title Case — every word capitalised, including
- * the small ones ("Dinner With Parents").
+ * the small ones ("Dinner Planned With Parents").
  */
 
 export const USERS = {
