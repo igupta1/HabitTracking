@@ -187,7 +187,7 @@ export const HABITS: Record<UserId, Habit[]> = {
 
     { key: 'w_dinner_parents', title: 'Dinner Planned With Parents', kind: 'toggle', section: 'Relationships', weekly: true },
     { key: 'w_two_dates', title: 'Two Planned Dates', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_friends_adventure', title: 'Hangouts Planned With Friends', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_friends_adventure', title: 'Hangouts Planned (HD, BV, HS, Running, Work)', kind: 'toggle', section: 'Relationships', weekly: true },
     { key: 'w_album', title: 'Album Update From Previous Week', kind: 'toggle', section: 'Relationships', weekly: true },
   ],
 }
