@@ -85,10 +85,10 @@ export function shiftDay(day: string, delta: number): string {
 }
 
 /**
- * 0 for Monday through 6 for Sunday — how far into its week a day is, which is
- * both the row it sits on in the consistency grid and how far back its week
- * started. Weeks run Monday to Sunday here; `getUTCDay` counts from Sunday, so
- * this rotates it.
+ * 0 for Monday through 6 for Sunday — the row a day sits on in the consistency
+ * grid, whose columns run Monday to Sunday. `getUTCDay` counts from Sunday, so
+ * this rotates it. Not the weekly goals' week: that runs Friday to Thursday
+ * (see weekStart).
  */
 export function weekdayOf(day: string): number {
   return (noon(day).getUTCDay() + 6) % 7
@@ -103,16 +103,17 @@ export function daysFrom(from: string, to: string): string[] {
 }
 
 /**
- * The Monday the week containing `day` starts on. A weekly habit keeps one
- * toggle row per week, stored on this day, so every day of that week reads and
- * writes the same row. Weeks run Monday to Sunday — one definition, shared with
- * the column the consistency grid draws.
+ * The Friday the checklist week containing `day` starts on. A weekly habit
+ * keeps one toggle row per week, stored on this day, so every day of that week
+ * reads and writes the same row. Checklist weeks run Friday to Thursday: a
+ * fresh Friday Checklist opens every Friday. `getUTCDay` is 5 on a Friday, so
+ * (dow + 2) % 7 is how many days back that Friday was.
  */
 export function weekStart(day: string): string {
-  return shiftDay(day, -weekdayOf(day))
+  return shiftDay(day, -((noon(day).getUTCDay() + 2) % 7))
 }
 
-/** "Sep 28 – Oct 4" — which week a weekly habit's checks belong to. */
+/** "Nov 20 – Nov 26" — which Friday-to-Thursday week a weekly habit's checks belong to. */
 export function formatWeek(start: string): string {
   return `${formatShortDay(start)} – ${formatShortDay(shiftDay(start, 6))}`
 }

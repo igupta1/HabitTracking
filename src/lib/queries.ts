@@ -36,7 +36,7 @@ export type WorkoutRow = {
 
 export type DayData = {
   day: string
-  /** The Monday this day's week starts on — the row every weekly check is on. */
+  /** The Friday this day's checklist week starts on — the row every weekly check is on. */
   week: string
   toggles: Record<string, { done: boolean; count: number }>
   tasks: TaskRow[]
@@ -147,10 +147,10 @@ export async function loadDay(user: UserId, day: string = toDay()): Promise<DayD
     sql<{ habit_key: string; done: boolean; count: number }[]>`
       select habit_key, done, count from toggles
       where user_id = ${user} and day = ${day}`,
-    // The week's goals, whose one row per week sits on the Monday it starts —
+    // The week's goals, whose one row per week sits on the Friday it starts —
     // so it reads the same from any day of that week. Asked for by key rather
     // than by day alone, or this would also pick up whatever daily habits were
-    // checked that Monday. A user with no weekly goals skips it, since
+    // checked that Friday. A user with no weekly goals skips it, since
     // `any('{}')` would be a round trip to learn that.
     weekly.length
       ? sql<{ habit_key: string; done: boolean; count: number }[]>`
@@ -242,7 +242,7 @@ export function isDone(user: UserId, h: Habit, d: DayData): boolean {
 
 /**
  * The day's score, in the header beside each name. Weekly goals are left out:
- * a week's work is not today's, and counting them would open every Monday nine
+ * a week's work is not today's, and counting them would open every Friday nine
  * short with no way to catch up by bedtime.
  */
 export function progress(user: UserId, d: DayData): { done: number; total: number } {

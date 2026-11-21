@@ -33,8 +33,8 @@ function refresh() {
 
 /**
  * The row a habit's check lives on. A week's goal keeps one row for the whole
- * week, on the Monday it starts, so checking it on Wednesday and unchecking it
- * on Friday are the same row — see Habit.weekly.
+ * week, on the Friday it starts, so checking it on Saturday and unchecking it
+ * on Wednesday are the same row — see Habit.weekly.
  */
 function rowDay(h: Habit): string {
   return isWeekly(h) ? weekStart(toDay()) : toDay()
