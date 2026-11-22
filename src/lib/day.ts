@@ -103,30 +103,17 @@ export function daysFrom(from: string, to: string): string[] {
 }
 
 /**
- * The one short checklist week: for a deploy the weeks ran Friday to Thursday,
- * and the week that started then (Fri Nov 20, 2026) was cut off at that
- * Sunday instead, so the checks already made on it carry over.
- */
-const BRIDGE_START = '2026-11-20'
-const BRIDGE_END = '2026-11-22'
-
-/**
- * The day the checklist week containing `day` starts on — a Monday, bar the
- * one bridge week above. A weekly habit keeps one toggle row per week, stored
- * on this day, so every day of that week reads and writes the same row.
- * Checklist weeks run Monday to Sunday: the Sunday Checklist is the week's
- * goals, due by Sunday, and a fresh one opens every Monday.
+ * The Monday the checklist week containing `day` starts on. A weekly habit
+ * keeps one toggle row per week, stored on this day, so every day of that week
+ * reads and writes the same row. Checklist weeks run Monday to Sunday: the
+ * Sunday Checklist is the week's goals, due by Sunday, and a fresh one opens
+ * every Monday.
  */
 export function weekStart(day: string): string {
-  if (day >= BRIDGE_START && day <= BRIDGE_END) return BRIDGE_START
   return shiftDay(day, -weekdayOf(day))
 }
 
-/**
- * "Nov 23 – Nov 29" — which week a weekly habit's checks belong to. Ends on the
- * first Sunday from `start`, which is six days on from a Monday and covers the
- * bridge week's "Nov 20 – Nov 22" too.
- */
+/** "Nov 16 – Nov 22" — which Monday-to-Sunday week a weekly habit's checks belong to. */
 export function formatWeek(start: string): string {
-  return `${formatShortDay(start)} – ${formatShortDay(shiftDay(start, 6 - weekdayOf(start)))}`
+  return `${formatShortDay(start)} – ${formatShortDay(shiftDay(start, 6))}`
 }

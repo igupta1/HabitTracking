@@ -145,7 +145,7 @@ single day.
 `src/lib/habits.ts`. Those rows don't sit among the day's: they collect in a
 **Sunday Checklist** group as the last row of their section's card, shut on every load,
 showing only how many of them are done and which week that is
-("Sunday Checklist · Nov 23 – Nov 29 · 1/2"). Open it and they are ordinary habit rows,
+("Sunday Checklist · Nov 16 – Nov 22 · 1/2"). Open it and they are ordinary habit rows,
 checks and all. Ishaan has three sections' worth — inventory refresh, LinkedIn connections and
 Smartlead pipeline under Project; **Review Finances & Investments** under
 Miscellaneous; parents, dates, friends and pictures under
@@ -162,13 +162,11 @@ a key.
 
 **Checklist weeks run Monday to Sunday**: the Sunday Checklist is the week's
 goals, due by Sunday, and a fresh one opens every Monday. `weekdayOf` is the one
-definition of that, shared with the consistency grid's columns. One week is
-short: for one deploy the weeks ran Friday to Thursday, so the week that
-started Fri Nov 20, 2026 is cut off at Sun Nov 22 instead and stays stored on
-that Friday — `weekStart` names it, and `formatWeek` ends every week on its
-first Sunday so it reads "Nov 20 – Nov 22". Earlier still, for one deploy, the
-goals were anchored to Sundays; `ensureColumns` still shifts those Sunday rows
-a day forward, named key by key, which matches nothing written since.
+definition of that, shared with the consistency grid's columns. For one
+deploy each the goals were anchored elsewhere, and `ensureColumns` moves those
+checks back onto their Monday, named key by key: Sunday anchors a day forward,
+and the Fri Nov 20, 2026 anchor (weeks briefly ran Friday to Thursday) back to
+Mon Nov 16. Both match nothing written since.
 
 **Weekly goals sit out the day's score.** The `done/total` beside each name
 counts daily habits only — a week's work isn't today's, and counting it would

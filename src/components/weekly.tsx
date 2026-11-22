@@ -36,7 +36,7 @@ export function WeeklyGroup({
   return (
     <div>
       {/* The text is the button's own name, so no aria-label to override it —
-          "Sunday Checklist Nov 23 – Nov 29 1/2", plus expanded or not. */}
+          "Sunday Checklist Nov 16 – Nov 22 1/2", plus expanded or not. */}
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}

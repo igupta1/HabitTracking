@@ -103,6 +103,23 @@ function ensureColumns(): Promise<void> {
                           'w_bike_distance', 'w_weight_down', 'w_dinner_parents',
                           'w_date_saloni', 'w_friends_adventure', 'w_album')
         and extract(dow from day) = 0`
+    // Weekly goals likewise spent one deploy on Friday-to-Thursday weeks, so
+    // whatever was checked from Fri Nov 20, 2026 sits on that Friday. That week
+    // is now Mon Nov 16 – Sun Nov 22: move those checks onto its Monday, the
+    // newer of the two winning where both exist, then drop the Friday rows.
+    // Only the weekly keys — a daily habit checked that Friday stays put. A
+    // weekly row never lands on a Friday again, so this settles after one pass.
+    const weekly = weeklyKeys('ishaan')
+    await sql`
+      insert into toggles (user_id, habit_key, day, done, count, updated_at)
+      select user_id, habit_key, '2026-11-16', done, count, updated_at from toggles
+      where day = '2026-11-20' and habit_key = any(${weekly}::text[])
+      on conflict (user_id, habit_key, day) do update
+        set done = excluded.done, count = excluded.count, updated_at = excluded.updated_at
+        where toggles.updated_at < excluded.updated_at`
+    await sql`
+      delete from toggles
+      where day = '2026-11-20' and habit_key = any(${weekly}::text[])`
   })().catch((e) => {
     migrated = undefined // a cold-start timeout shouldn't poison every later load
     throw e
