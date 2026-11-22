@@ -182,6 +182,7 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'w_inventory_refresh', title: 'Inventory Refresh', kind: 'toggle', section: 'Project', weekly: true },
     { key: 'w_li_quota', title: 'LI Connections For The Week', kind: 'toggle', section: 'Project', weekly: true },
     { key: 'w_smartlead', title: 'Smartlead Pipeline For The Week', kind: 'toggle', section: 'Project', weekly: true },
+    { key: 'w_promised_leads', title: 'Provide Promised Leads', kind: 'toggle', section: 'Project', weekly: true },
 
     { key: 'w_finances', title: 'Review Finances & Investments', kind: 'toggle', section: 'Miscellaneous', weekly: true },
 
