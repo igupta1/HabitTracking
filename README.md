@@ -34,7 +34,7 @@ src/actions.ts                   writes (server actions — no REST API, no stor
 src/components/rows.tsx          one component per habit kind
 src/components/weight-chart.tsx  date vs lbs
 src/components/consistency.tsx   a cell per day, filled on the days it was done
-src/components/weekly.tsx        the collapsed Friday Checklist group at a section's foot
+src/components/weekly.tsx        the collapsed Sunday Checklist group at a section's foot
 src/app/[user]/page.tsx          the only real page
 ```
 
@@ -143,35 +143,36 @@ single day.
 
 **A habit can be a week's goal rather than a day's** — `weekly: true` in
 `src/lib/habits.ts`. Those rows don't sit among the day's: they collect in a
-**Friday Checklist** group as the last row of their section's card, shut on every load,
+**Sunday Checklist** group as the last row of their section's card, shut on every load,
 showing only how many of them are done and which week that is
-("Friday Checklist · Nov 20 – Nov 26 · 1/2"). Open it and they are ordinary habit rows,
+("Sunday Checklist · Nov 23 – Nov 29 · 1/2"). Open it and they are ordinary habit rows,
 checks and all. Ishaan has three sections' worth — inventory refresh, LinkedIn connections and
 Smartlead pipeline under Project; **Review Finances & Investments** under
 Miscellaneous; parents, dates, friends and pictures under
 Relationships — and a section with none has no group at all.
 
-The flag changes one thing about storage: the check goes on the **Friday its
+The flag changes one thing about storage: the check goes on the **Monday its
 week starts on** rather than on today, so every day of that week reads and
-writes the one row — tick it on Saturday, untick it on Wednesday, and that is the
+writes the one row — tick it on Wednesday, untick it on Saturday, and that is the
 same row both times. `weekStart` in `src/lib/day.ts` is the whole of it.
 `loadDay` therefore asks for the week's rows in a second query, *by key*:
 asking by day alone would also drag in whatever daily habits were checked that
-Friday. The result merges into the one `toggles` map, since no two habits share
+Monday. The result merges into the one `toggles` map, since no two habits share
 a key.
 
-**Checklist weeks run Friday to Thursday**: a fresh Friday Checklist opens every
-Friday (from Fri Nov 20, 2026), and `weekStart` is the one place that says so.
-The consistency grid keeps its own Monday-to-Sunday columns through
-`weekdayOf`; the two no longer share a definition. Before that the goals were
-anchored to Mondays (checks from those weeks stay in the table, just unread),
-and before that, for one deploy, to Sundays; `ensureColumns` still shifts those
-Sunday rows a day forward, named key by key, which matches nothing written
-since.
+**Checklist weeks run Monday to Sunday**: the Sunday Checklist is the week's
+goals, due by Sunday, and a fresh one opens every Monday. `weekdayOf` is the one
+definition of that, shared with the consistency grid's columns. One week is
+short: for one deploy the weeks ran Friday to Thursday, so the week that
+started Fri Nov 20, 2026 is cut off at Sun Nov 22 instead and stays stored on
+that Friday — `weekStart` names it, and `formatWeek` ends every week on its
+first Sunday so it reads "Nov 20 – Nov 22". Earlier still, for one deploy, the
+goals were anchored to Sundays; `ensureColumns` still shifts those Sunday rows
+a day forward, named key by key, which matches nothing written since.
 
 **Weekly goals sit out the day's score.** The `done/total` beside each name
 counts daily habits only — a week's work isn't today's, and counting it would
-open every Friday five short with no way to catch up by bedtime. The group
+open every Monday five short with no way to catch up by bedtime. The group
 keeps its own count instead. They get no consistency grid either: `history`
 draws a cell per day, and a week's row has six days with nothing in them.
 

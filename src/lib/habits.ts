@@ -85,8 +85,8 @@ export type Habit = {
   checks?: boolean
   /**
    * Whether this is a week's goal rather than a day's. Its check is stored
-   * against the Friday its week starts on (see weekStart), so it reads the same
-   * from any day of that week; it is drawn in the collapsed Friday Checklist group at the
+   * against the Monday its week starts on (see weekStart), so it reads the same
+   * from any day of that week; it is drawn in the collapsed Sunday Checklist group at the
    * foot of its section instead of among the day's rows, and it sits out the
    * day's score — a week's work is not today's. For the kinds whose whole state
    * is the check: toggle and counter.
@@ -175,7 +175,7 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },
     { key: 'call_friend', title: 'Respond To Texts', kind: 'toggle', section: 'Relationships' },
 
-    // The week's goals, three sections' worth. Each lot is drawn in a Friday
+    // The week's goals, three sections' worth. Each lot is drawn in a Sunday
     // Checklist group at the foot of its own section, collapsed until you open it —
     // they're what the daily rows are for, not something to check off today.
     // Kept together here, and in section order, since they read as one set.

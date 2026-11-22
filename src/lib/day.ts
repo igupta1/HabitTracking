@@ -85,10 +85,10 @@ export function shiftDay(day: string, delta: number): string {
 }
 
 /**
- * 0 for Monday through 6 for Sunday — the row a day sits on in the consistency
- * grid, whose columns run Monday to Sunday. `getUTCDay` counts from Sunday, so
- * this rotates it. Not the weekly goals' week: that runs Friday to Thursday
- * (see weekStart).
+ * 0 for Monday through 6 for Sunday — how far into its week a day is, which is
+ * both the row it sits on in the consistency grid and how far back its
+ * checklist week started (see weekStart). Weeks run Monday to Sunday;
+ * `getUTCDay` counts from Sunday, so this rotates it.
  */
 export function weekdayOf(day: string): number {
   return (noon(day).getUTCDay() + 6) % 7
@@ -103,17 +103,30 @@ export function daysFrom(from: string, to: string): string[] {
 }
 
 /**
- * The Friday the checklist week containing `day` starts on. A weekly habit
- * keeps one toggle row per week, stored on this day, so every day of that week
- * reads and writes the same row. Checklist weeks run Friday to Thursday: a
- * fresh Friday Checklist opens every Friday. `getUTCDay` is 5 on a Friday, so
- * (dow + 2) % 7 is how many days back that Friday was.
+ * The one short checklist week: for a deploy the weeks ran Friday to Thursday,
+ * and the week that started then (Fri Nov 20, 2026) was cut off at that
+ * Sunday instead, so the checks already made on it carry over.
+ */
+const BRIDGE_START = '2026-11-20'
+const BRIDGE_END = '2026-11-22'
+
+/**
+ * The day the checklist week containing `day` starts on — a Monday, bar the
+ * one bridge week above. A weekly habit keeps one toggle row per week, stored
+ * on this day, so every day of that week reads and writes the same row.
+ * Checklist weeks run Monday to Sunday: the Sunday Checklist is the week's
+ * goals, due by Sunday, and a fresh one opens every Monday.
  */
 export function weekStart(day: string): string {
-  return shiftDay(day, -((noon(day).getUTCDay() + 2) % 7))
+  if (day >= BRIDGE_START && day <= BRIDGE_END) return BRIDGE_START
+  return shiftDay(day, -weekdayOf(day))
 }
 
-/** "Nov 20 – Nov 26" — which Friday-to-Thursday week a weekly habit's checks belong to. */
+/**
+ * "Nov 23 – Nov 29" — which week a weekly habit's checks belong to. Ends on the
+ * first Sunday from `start`, which is six days on from a Monday and covers the
+ * bridge week's "Nov 20 – Nov 22" too.
+ */
 export function formatWeek(start: string): string {
-  return `${formatShortDay(start)} – ${formatShortDay(shiftDay(start, 6))}`
+  return `${formatShortDay(start)} – ${formatShortDay(shiftDay(start, 6 - weekdayOf(start)))}`
 }
