@@ -106,7 +106,7 @@ export function daysFrom(from: string, to: string): string[] {
  * The Monday the checklist week containing `day` starts on. A weekly habit
  * keeps one toggle row per week, stored on this day, so every day of that week
  * reads and writes the same row. Checklist weeks run Monday to Sunday: the
- * Sunday Checklist is the week's goals, due by Sunday, and a fresh one opens
+ * Weekly Checklist is the week's goals, due by Sunday, and a fresh one opens
  * every Monday.
  */
 export function weekStart(day: string): string {

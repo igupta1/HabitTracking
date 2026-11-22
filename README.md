@@ -34,7 +34,7 @@ src/actions.ts                   writes (server actions — no REST API, no stor
 src/components/rows.tsx          one component per habit kind
 src/components/weight-chart.tsx  date vs lbs
 src/components/consistency.tsx   a cell per day, filled on the days it was done
-src/components/weekly.tsx        the collapsed Sunday Checklist group at a section's foot
+src/components/weekly.tsx        the collapsed Weekly Checklist group at a section's foot
 src/app/[user]/page.tsx          the only real page
 ```
 
@@ -143,13 +143,15 @@ single day.
 
 **A habit can be a week's goal rather than a day's** — `weekly: true` in
 `src/lib/habits.ts`. Those rows don't sit among the day's: they collect in a
-**Sunday Checklist** group as the last row of their section's card, shut on every load,
+**Weekly Checklist** group as the last row of their section's card, shut on every load,
 showing only how many of them are done and which week that is
-("Sunday Checklist · Nov 16 – Nov 22 · 1/2"). Open it and they are ordinary habit rows,
+("Weekly Checklist · Nov 16 – Nov 22 · 1/2"). Open it and they are ordinary habit rows,
 checks and all. Ishaan has three sections' worth — inventory refresh, LinkedIn connections and
 Smartlead pipeline under Project; **Review Finances & Investments** under
 Miscellaneous; parents, dates, friends and pictures under
 Relationships — and a section with none has no group at all.
+On Sunday, the week's last day, a group's "Weekly Checklist" turns red until
+every goal in it is done; the rest of the week it stays plain.
 
 The flag changes one thing about storage: the check goes on the **Monday its
 week starts on** rather than on today, so every day of that week reads and
@@ -160,7 +162,7 @@ asking by day alone would also drag in whatever daily habits were checked that
 Monday. The result merges into the one `toggles` map, since no two habits share
 a key.
 
-**Checklist weeks run Monday to Sunday**: the Sunday Checklist is the week's
+**Checklist weeks run Monday to Sunday**: the Weekly Checklist is the week's
 goals, due by Sunday, and a fresh one opens every Monday. `weekdayOf` is the one
 definition of that, shared with the consistency grid's columns. For one
 deploy each the goals were anchored elsewhere, and `ensureColumns` moves those

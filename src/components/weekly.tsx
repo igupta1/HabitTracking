@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { formatWeek } from '@/lib/day'
+import { formatWeek, weekdayOf } from '@/lib/day'
 import type { Habit, UserId } from '@/lib/habits'
 import type { DayData } from '@/lib/queries'
 import { HabitRow } from './rows'
@@ -15,6 +15,9 @@ import { HabitRow } from './rows'
  * is the whole of what it has to say; open, the rows are ordinary habit rows,
  * checks and all, since a weekly goal differs from a daily one only in which
  * row its check is stored on (see Habit.weekly).
+ *
+ * On Sunday, the week's last day, the name turns red until every goal in the
+ * group is done — a nudge while there is still a day to do them in.
  */
 export function WeeklyGroup({
   user,
@@ -32,17 +35,19 @@ export function WeeklyGroup({
 }) {
   const [open, setOpen] = useState(false)
   const doneCount = habits.filter((h) => done[h.key]).length
+  // 6 is Sunday; the day shown, which flips at 4am like the rest of the app.
+  const overdue = weekdayOf(day.day) === 6 && doneCount < habits.length
 
   return (
     <div>
       {/* The text is the button's own name, so no aria-label to override it —
-          "Sunday Checklist Nov 16 – Nov 22 1/2", plus expanded or not. */}
+          "Weekly Checklist Nov 16 – Nov 22 1/2", plus expanded or not. */}
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="tap flex w-full items-center gap-3 px-4 py-3 text-left"
       >
-        <span className="font-medium">Sunday Checklist</span>
+        <span className={`font-medium ${overdue ? 'text-red-400' : ''}`}>Weekly Checklist</span>
         <span className="flex-1 text-xs text-neutral-500">{formatWeek(day.week)}</span>
         <span className="tabular-nums text-sm text-neutral-400">
           {doneCount}/{habits.length}
