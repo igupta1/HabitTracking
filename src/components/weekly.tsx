@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { formatWeek, weekdayOf } from '@/lib/day'
-import type { Habit, UserId } from '@/lib/habits'
+import type { Checklist, Habit, UserId } from '@/lib/habits'
 import type { DayData } from '@/lib/queries'
 import { HabitRow } from './rows'
 
 /**
- * The week's goals, as the last row of their section's card: a line saying how
+ * One checklist's worth of the week's goals (the Weekly or the Sunday
+ * Checklist), as a row at the foot of their section's card: a line saying how
  * many of them are done that opens into the rows themselves.
  *
  * Collapsed by default, and on every load — there is no client storage in this
@@ -20,12 +21,14 @@ import { HabitRow } from './rows'
  * group is done — a nudge while there is still a day to do them in.
  */
 export function WeeklyGroup({
+  name,
   user,
   habits,
   done,
   day,
   readOnly,
 }: {
+  name: Checklist
   user: UserId
   habits: Habit[]
   /** Done by key, worked out server-side — `isDone` reads the database module. */
@@ -41,13 +44,13 @@ export function WeeklyGroup({
   return (
     <div>
       {/* The text is the button's own name, so no aria-label to override it —
-          "Weekly Checklist Nov 16 – Nov 22 1/2", plus expanded or not. */}
+          "Sunday Checklist Nov 16 – Nov 22 1/2", plus expanded or not. */}
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="tap flex w-full items-center gap-3 px-4 py-3 text-left"
       >
-        <span className={`font-medium ${overdue ? 'text-red-400' : ''}`}>Weekly Checklist</span>
+        <span className={`font-medium ${overdue ? 'text-red-400' : ''}`}>{name}</span>
         <span className="flex-1 text-xs text-neutral-500">{formatWeek(day.week)}</span>
         <span className="tabular-nums text-sm text-neutral-400">
           {doneCount}/{habits.length}

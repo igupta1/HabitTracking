@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import {
   dailyIn,
-  weeklyIn,
+  checklistsIn,
   sectionsFor,
   nameOf,
   isUserId,
@@ -63,8 +63,8 @@ function Column({
       <div className="space-y-4">
         {sectionsFor(who).map((section) => {
           // The day's rows, then — where the section has any — the week's
-          // goals folded up beneath them as the card's last row.
-          const weekly = weeklyIn(who, section)
+          // goals folded up beneath them, one row per checklist.
+          const groups = checklistsIn(who, section)
           return (
             <section key={section}>
               <h3 className="px-4 pb-1.5 text-xs font-medium uppercase tracking-wide text-neutral-500">
@@ -84,15 +84,17 @@ function Column({
                     history={history}
                   />
                 ))}
-                {weekly.length > 0 && (
+                {groups.map((g) => (
                   <WeeklyGroup
+                    key={g.name}
+                    name={g.name}
                     user={who}
-                    habits={weekly}
-                    done={Object.fromEntries(weekly.map((h) => [h.key, isDone(who, h, day)]))}
+                    habits={g.habits}
+                    done={Object.fromEntries(g.habits.map((h) => [h.key, isDone(who, h, day)]))}
                     day={day}
                     readOnly={readOnly}
                   />
-                )}
+                ))}
               </div>
             </section>
           )

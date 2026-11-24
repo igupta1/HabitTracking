@@ -39,6 +39,15 @@ export const SECTIONS = [
 export type Section = (typeof SECTIONS)[number]
 
 /**
+ * The two groups a week's goals can sit in, drawn in this order at the foot of
+ * their section. The Weekly Checklist is what to have set up for the week; the
+ * Sunday Checklist is what gets done on Sunday itself. Both keep one check per
+ * Monday-to-Sunday week, and both turn red on Sunday until they are done.
+ */
+export const CHECKLISTS = ['Weekly Checklist', 'Sunday Checklist'] as const
+export type Checklist = (typeof CHECKLISTS)[number]
+
+/**
  * How an entry ate: the traffic light tapped onto it after it is logged, on the
  * food rows whose habit asks for one. Also the order the swatch cycles in.
  */
@@ -84,14 +93,14 @@ export type Habit = {
    */
   checks?: boolean
   /**
-   * Whether this is a week's goal rather than a day's. Its check is stored
-   * against the Monday its week starts on (see weekStart), so it reads the same
-   * from any day of that week; it is drawn in the collapsed Weekly Checklist group at the
-   * foot of its section instead of among the day's rows, and it sits out the
-   * day's score — a week's work is not today's. For the kinds whose whole state
-   * is the check: toggle and counter.
+   * Set on a week's goal rather than a day's, naming the checklist it belongs
+   * to. Its check is stored against the Monday its week starts on (see
+   * weekStart), so it reads the same from any day of that week; it is drawn in
+   * that collapsed checklist group at the foot of its section instead of among
+   * the day's rows, and it sits out the day's score — a week's work is not
+   * today's. For the kinds whose whole state is the check: toggle and counter.
    */
-  weekly?: boolean
+  weekly?: Checklist
   /**
    * Whether the row carries a button opening its consistency grid — a cell per
    * day, filled on the days it was done. Only for the kinds whose day is a
@@ -165,8 +174,9 @@ export const HABITS: Record<UserId, Habit[]> = {
     // stays attached.
     { key: 'linkedin_followups', title: 'Email & LinkedIn Follow Ups', kind: 'toggle', section: 'Project' },
 
-    // The day's training, then the two it is easy to forget. The four with
-    // `history`: the ones worth seeing a run of days for.
+    // The weigh-in leads, then the day's training, then the two it is easy to
+    // forget. The four with `history`: the ones worth seeing a run of days for.
+    { key: 'weight', title: 'Weight', kind: 'weight', section: 'Health' },
     { key: 'strength', title: 'Strength Workout', kind: 'strength', section: 'Health', history: true },
     { key: 'cardio', title: 'Cardio', kind: 'cardio', section: 'Health', history: true },
     { key: 'stretching', title: 'Stretching', kind: 'toggle', section: 'Health', history: true },
@@ -175,21 +185,28 @@ export const HABITS: Record<UserId, Habit[]> = {
     { key: 'call_partner', title: 'Call With Saloni', kind: 'toggle', section: 'Relationships' },
     { key: 'call_friend', title: 'Respond To Texts', kind: 'toggle', section: 'Relationships' },
 
-    // The week's goals, three sections' worth. Each lot is drawn in a Sunday
-    // Checklist group at the foot of its own section, collapsed until you open it —
-    // they're what the daily rows are for, not something to check off today.
-    // Kept together here, and in section order, since they read as one set.
-    { key: 'w_inventory_refresh', title: 'Inventory Refresh', kind: 'toggle', section: 'Project', weekly: true },
-    { key: 'w_li_quota', title: 'LI Connections For The Week', kind: 'toggle', section: 'Project', weekly: true },
-    { key: 'w_smartlead', title: 'Smartlead Pipeline For The Week', kind: 'toggle', section: 'Project', weekly: true },
-    { key: 'w_promised_leads', title: 'Provide Promised Leads', kind: 'toggle', section: 'Project', weekly: true },
+    // The week's goals, four sections' worth. Each lot is drawn at the foot of
+    // its own section in a Weekly Checklist and a Sunday Checklist group (see
+    // CHECKLISTS), collapsed until you open them — they're what the daily rows
+    // are for, not something to check off today. Kept together here, and in
+    // section order, since they read as one set. Retitled goals keep their old
+    // keys so their checks stay attached.
+    { key: 'w_inventory_refresh', title: 'Refresh Inventory', kind: 'toggle', section: 'Project', weekly: 'Sunday Checklist' },
+    { key: 'w_li_quota', title: 'Max Out LinkedIn Connections', kind: 'toggle', section: 'Project', weekly: 'Sunday Checklist' },
+    { key: 'w_smartlead', title: 'Fill Campaign Pipeline For The Week', kind: 'toggle', section: 'Project', weekly: 'Sunday Checklist' },
+    { key: 'w_promised_leads', title: 'Provide Promised Leads', kind: 'toggle', section: 'Project', weekly: 'Sunday Checklist' },
 
-    { key: 'w_finances', title: 'Review Finances & Investments', kind: 'toggle', section: 'Miscellaneous', weekly: true },
+    { key: 'w_finances', title: 'Review Finances & Investments', kind: 'toggle', section: 'Miscellaneous', weekly: 'Sunday Checklist' },
 
-    { key: 'w_dinner_parents', title: 'Dinner Planned With Parents', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_two_dates', title: 'Two Planned Dates', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_friends_adventure', title: 'Hangouts Planned (HD, BV, HS, Running, Work)', kind: 'toggle', section: 'Relationships', weekly: true },
-    { key: 'w_album', title: 'Album Update From Previous Week', kind: 'toggle', section: 'Relationships', weekly: true },
+    { key: 'w_long_run', title: 'Long Run Planned', kind: 'toggle', section: 'Health', weekly: 'Weekly Checklist' },
+    { key: 'w_long_bike', title: 'Long Bike Planned', kind: 'toggle', section: 'Health', weekly: 'Weekly Checklist' },
+    // The old Weight Reduced 1 Pound goal, back under a new title.
+    { key: 'w_weight_down', title: 'Lost 1 Pound', kind: 'toggle', section: 'Health', weekly: 'Sunday Checklist' },
+
+    { key: 'w_two_dates', title: '2 Dates Planned A Week', kind: 'toggle', section: 'Relationships', weekly: 'Weekly Checklist' },
+    { key: 'w_dinner_parents', title: 'Dinner Planned With Parents', kind: 'toggle', section: 'Relationships', weekly: 'Weekly Checklist' },
+    { key: 'w_friends_adventure', title: 'Hangouts Planned With Groups', kind: 'toggle', section: 'Relationships', weekly: 'Weekly Checklist' },
+    { key: 'w_album', title: 'Add Pictures To Weekly Recap', kind: 'toggle', section: 'Relationships', weekly: 'Sunday Checklist' },
   ],
 }
 
@@ -216,7 +233,7 @@ export function keyOfKind(user: UserId, kind: HabitKind): string | undefined {
  * it. See Habit.weekly.
  */
 export function isWeekly(h: Habit): boolean {
-  return h.weekly === true
+  return h.weekly !== undefined
 }
 
 /** A section's daily rows, in config order — the card's own contents. */
@@ -224,9 +241,18 @@ export function dailyIn(user: UserId, section: Section): Habit[] {
   return HABITS[user].filter((h) => h.section === section && !isWeekly(h))
 }
 
-/** A section's weekly goals, which hang together in the group below them. */
-export function weeklyIn(user: UserId, section: Section): Habit[] {
-  return HABITS[user].filter((h) => h.section === section && isWeekly(h))
+/**
+ * A section's weekly goals, one group per checklist that has any, in CHECKLISTS
+ * order — the groups drawn below the section's daily rows.
+ */
+export function checklistsIn(
+  user: UserId,
+  section: Section
+): { name: Checklist; habits: Habit[] }[] {
+  return CHECKLISTS.map((name) => ({
+    name,
+    habits: HABITS[user].filter((h) => h.section === section && h.weekly === name),
+  })).filter((g) => g.habits.length > 0)
 }
 
 /** Every weekly key this user has — what a read of the week's row asks for. */
