@@ -198,8 +198,8 @@ export const HABITS: Record<UserId, Habit[]> = {
 
     { key: 'w_finances', title: 'Review Finances & Investments', kind: 'toggle', section: 'Miscellaneous', weekly: 'Sunday Checklist' },
 
-    { key: 'w_long_run', title: 'Long Run Planned', kind: 'toggle', section: 'Health', weekly: 'Weekly Checklist' },
-    { key: 'w_long_bike', title: 'Long Bike Planned', kind: 'toggle', section: 'Health', weekly: 'Weekly Checklist' },
+    { key: 'w_long_run', title: 'Long Run Completed', kind: 'toggle', section: 'Health', weekly: 'Weekly Checklist' },
+    { key: 'w_long_bike', title: 'Long Bike Completed', kind: 'toggle', section: 'Health', weekly: 'Weekly Checklist' },
     // The old Weight Reduced 1 Pound goal, back under a new title.
     { key: 'w_weight_down', title: 'Lost 1 Pound', kind: 'toggle', section: 'Health', weekly: 'Sunday Checklist' },
 
